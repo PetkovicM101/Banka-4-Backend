@@ -37,29 +37,18 @@ func (h *EmployeeHandler) Register(c *gin.Context) {
 }
 
 func (h *EmployeeHandler) Activate(c *gin.Context) {
-	var req struct {
-		Email    string `json:"email"`
-		Token    string `json:"token"`
-		Password string `json:"password"`
-	}
+	var req dto.ActivateEmployeeRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
+		c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
-	if len(req.Password) < 8 {
-		c.JSON(400, gin.H{"error": "Password too short"})
-		return
-	}
-
-	err := h.service.SetPassword(req.Email, req.Password)
+	err := h.service.ActivateAccount(c.Request.Context(), req.Token, req.Password)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
-
-	es := service.NewEmailService()
-	es.Send(req.Email, "Account activated", "Vaš nalog je uspešno aktiviran.")
 
 	c.JSON(200, gin.H{"message": "Password set successfully"})
 }

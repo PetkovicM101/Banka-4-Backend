@@ -1,22 +1,32 @@
 package service
 
 import (
-	"context"
-	"fmt"
-	"unicode"
-
 	"common/pkg/errors"
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"time"
 	"user-service/internal/dto"
 	"user-service/internal/model"
 	"user-service/internal/repository"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type EmployeeService struct {
-	repo repository.EmployeeRepository // <-- no pointer
+	repo         repository.EmployeeRepository // <-- no pointer
+	tokenRepo    repository.ActivationTokenRepository
+	emailService *EmailService
 }
 
-func NewEmployeeService(repo repository.EmployeeRepository) *EmployeeService {
-	return &EmployeeService{repo: repo}
+func NewEmployeeService(
+	repo repository.EmployeeRepository, tokenRepo repository.ActivationTokenRepository, emailService *EmailService) *EmployeeService {
+	return &EmployeeService{
+		repo:         repo,
+		tokenRepo:    tokenRepo,
+		emailService: emailService,
+	}
 }
 
 func (s *EmployeeService) Register(ctx context.Context, req *dto.CreateEmployeeRequest) (*model.Employee, error) {
@@ -56,44 +66,67 @@ func (s *EmployeeService) Register(ctx context.Context, req *dto.CreateEmployeeR
 	}
 
 	// slanje emaila
-	es := NewEmailService()
-	link := GenerateActivationLink(employee.Email)
-	es.Send(employee.Email, "Welcome!", fmt.Sprintf("Kliknite ovde da postavite lozinku: %s", link))
+	tokenBytes := make([]byte, 16) // 128-bit token
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return nil, errors.InternalErr(err)
+	}
+	tokenStr := hex.EncodeToString(tokenBytes)
+
+	activationToken := &model.ActivationToken{
+		EmployeeID: employee.EmployeeID,
+		Token:      tokenStr,
+		ExpiresAt:  time.Now().Add(24 * time.Hour), // token važi 24h
+	}
+
+	if err := s.tokenRepo.Create(ctx, activationToken); err != nil {
+		return nil, errors.InternalErr(err)
+	}
+
+	link := fmt.Sprintf("http://localhost:8080/activate?token=%s", tokenStr)
+
+	s.emailService.Send(
+		employee.Email,
+		"Welcome!",
+		fmt.Sprintf("Kliknite ovde da postavite lozinku: %s", link),
+	)
 
 	return employee, nil
 }
-func isValidPassword(password string) bool {
 
-	if len(password) < 8 || len(password) > 32 {
-		return false
+func (s *EmployeeService) ActivateAccount(ctx context.Context, tokenStr, password string) error {
+	// Pronađi token u bazi
+	activationToken, err := s.tokenRepo.FindByToken(ctx, tokenStr)
+	if err != nil || activationToken == nil {
+		return errors.ConflictErr("invalid or expired token")
 	}
 
-	var upper, lower, digits int
-
-	for _, c := range password {
-		switch {
-		case unicode.IsUpper(c):
-			upper++
-		case unicode.IsLower(c):
-			lower++
-		case unicode.IsDigit(c):
-			digits++
-		}
+	// Provera da li je token istekao
+	if activationToken.ExpiresAt.Before(time.Now()) {
+		return errors.ConflictErr("token expired")
 	}
 
-	return upper >= 1 && lower >= 1 && digits >= 2
-}
-func (s *EmployeeService) SetPassword(email, password string) error {
-	// validacija password-a
-	if !isValidPassword(password) {
-		return errors.ConflictErr("password must contain 8-32 characters, 1 uppercase, 1 lowercase and 2 numbers")
-	}
-
-	employee, err := s.repo.FindByEmail(context.Background(), email)
+	// Nađi zaposlenog preko EmployeeID iz tokena
+	employee, err := s.repo.FindByID(ctx, activationToken.EmployeeID)
 	if err != nil || employee == nil {
 		return errors.ConflictErr("employee not found")
 	}
 
-	employee.Password = password // kasnije hashovati
-	return s.repo.Update(context.Background(), employee)
+	// Hash lozinke
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.InternalErr(err)
+	}
+
+	employee.Password = string(hashedPassword)
+	if err := s.repo.Update(ctx, employee); err != nil {
+		return errors.InternalErr(err)
+	}
+
+	// Obriši token jer je iskorišćen
+	_ = s.tokenRepo.Delete(ctx, activationToken)
+
+	// Pošalji mejl
+	s.emailService.Send(employee.Email, "Account activated", "Vaš nalog je uspešno aktiviran.")
+
+	return nil
 }

@@ -49,3 +49,11 @@ func (r *employeeRepository) FindByUserName(ctx context.Context, userName string
 func (r *employeeRepository) Update(ctx context.Context, employee *model.Employee) error {
 	return r.db.WithContext(ctx).Save(employee).Error
 }
+func (r *employeeRepository) FindByID(ctx context.Context, id uint) (*model.Employee, error) {
+	var e model.Employee
+	result := r.db.WithContext(ctx).First(&e, id)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &e, nil
+}
