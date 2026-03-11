@@ -1,9 +1,9 @@
 package service
 
 import (
+	"common/pkg/auth"
 	"common/pkg/errors"
 	"common/pkg/jwt"
-	"common/pkg/permission"
 
 	"context"
 	"fmt"
@@ -62,7 +62,6 @@ func (s *EmployeeService) Register(ctx context.Context, req *dto.CreateEmployeeR
 	if existingByUsername != nil {
 		return nil, errors.ConflictErr("username already in use")
 	}
-
 	employee := &model.Employee{
 		FirstName:   req.FirstName,
 		LastName:    req.LastName,
@@ -75,7 +74,6 @@ func (s *EmployeeService) Register(ctx context.Context, req *dto.CreateEmployeeR
 		Department:  req.Department,
 		PositionID:  req.PositionID,
 		Active:      req.Active,
-		Permissions: mapPermissions(0, req.Permissions),
 	}
 
 	if err := s.repo.Create(ctx, employee); err != nil {
@@ -208,7 +206,6 @@ func (s *EmployeeService) UpdateEmployee(ctx context.Context, id uint, req *dto.
 	employee.Department = req.Department
 	employee.PositionID = req.PositionID
 	employee.Active = req.Active
-	employee.Permissions = mapPermissions(employee.EmployeeID, req.Permissions)
 
 	if err := s.repo.Update(ctx, employee); err != nil {
 		return nil, errors.InternalErr(err)
@@ -326,17 +323,6 @@ func (s *EmployeeService) ConfirmPasswordReset(ctx context.Context, token, newPa
 	return nil
 }
 
-func mapPermissions(employeeID uint, permissions []permission.Permission) []model.EmployeePermission {
-	result := make([]model.EmployeePermission, len(permissions))
-	for i, p := range permissions {
-		result[i] = model.EmployeePermission{
-			EmployeeID: employeeID,
-			Permission: p,
-		}
-	}
-	return result
-}
-
 func (s *EmployeeService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
 	//Pronadji zaposlenog po email-u
 	employee, err := s.repo.FindByEmail(ctx, req.Email)
@@ -365,4 +351,39 @@ func (s *EmployeeService) Login(ctx context.Context, req *dto.LoginRequest) (*dt
 
 	//Vrati generisani token
 	return &dto.LoginResponse{Token: token}, nil
+}
+
+func (s *EmployeeService) ConfirmChangePassword(ctx context.Context, oldPassword string, newPassword string) error {
+	authCtx := auth.GetAuthFromContext(ctx)
+
+	if authCtx == nil {
+		return errors.UnauthorizedErr("invalid credentials")
+	}
+
+	userID := authCtx.UserID
+	// ako je nova ista kao stara
+	if oldPassword == newPassword {
+		return errors.UnauthorizedErr("new password cannot be the same one")
+	}
+	//ako korisnik postoji
+	employee, err := s.repo.FindByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if employee == nil {
+		return errors.UnauthorizedErr("invalid credentials")
+	}
+	// Provaravamo staru lozinku
+	if err = bcrypt.CompareHashAndPassword([]byte(employee.Password), []byte(oldPassword)); err != nil {
+		return errors.UnauthorizedErr("invalid credentials")
+	}
+	// Postavljamo novu lozninku
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.InternalErr(err)
+	}
+
+	employee.Password = string(hashedPassword)
+
+	return s.repo.Update(ctx, employee)
 }
