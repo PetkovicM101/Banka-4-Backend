@@ -124,6 +124,8 @@ func ErrorHandler() gin.HandlerFunc {
 			logError(context, appErr)
 			context.JSON(appErr.Code, appErr)
 		} else {
+			logUnexpectedError(context, lastError)
+
 			context.JSON(
 				http.StatusInternalServerError,
 				NewAppError(http.StatusInternalServerError, "Internal Server Error", nil),
