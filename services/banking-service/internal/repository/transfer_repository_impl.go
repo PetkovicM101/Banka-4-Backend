@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"banking-service/internal/model"
 	"context"
 	"time"
 
@@ -17,7 +18,7 @@ func NewTransferRepository(db *gorm.DB) TransferRepository {
 
 // CreateTransfer kreira zapis transfera
 // TODO: Kada bude Transaction tabela, koristiti je za zapis
-func (r *transferRepository) CreateTransfer(ctx context.Context, sourceAccount, destAccount string, amount float64, description string) error {
+func (r *transferRepository) CreateTransfer(ctx context.Context, transfer model.Transfer) error {
 	// TODO: Implementirati čuvanje u Transaction tabelu
 	// Za sada samo logovanje
 	return nil

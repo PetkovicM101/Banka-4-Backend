@@ -22,7 +22,7 @@ func NewTransferService(
 
 // ExecuteTransfer izvršava transfer između dva računa
 func (s *TransferService) ExecuteTransfer(ctx context.Context, req dto.CreateTransferRequest) (*dto.TransferResponse, error) {
-	if req.SourceAccountNum == req.DestAccountNum {
+	if req.PayerAccountNumber == req.RecipientAccountNumber {
 		return nil, errors.UnprocessableEntityErr("cannot transfer to yourself")
 	}
 
@@ -32,16 +32,15 @@ func (s *TransferService) ExecuteTransfer(ctx context.Context, req dto.CreateTra
 	// TODO: Charge commission (0-1%) za različite valute
 	// TODO: Kreirati Transaction record u transaction tabeli
 
-	if err := s.repo.CreateTransfer(ctx, req.SourceAccountNum, req.DestAccountNum, req.Amount, req.Description); err != nil {
+	if err := s.repo.CreateTransfer(ctx, req.PayerAccountNumber, req.RecipientAccountNumber, req.Amount); err != nil {
 		return nil, errors.InternalErr(err)
 	}
 
 	return &dto.TransferResponse{
-		SourceAccountNum: req.SourceAccountNum,
-		DestAccountNum:   req.DestAccountNum,
-		Amount:           req.Amount,
-		Description:      req.Description,
-		Status:           "Pending",
+		PayerAccountNumber:     req.PayerAccountNumber,
+		RecipientAccountNumber: req.RecipientAccountNumber,
+		StartAmount:            req.Amount,
+		Status:                 "Pending",
 	}, nil
 }
 
@@ -62,13 +61,13 @@ func (s *TransferService) GetTransferHistory(ctx context.Context, accountNum str
 	var transferDTOs []dto.TransferResponse
 	for _, t := range transfers {
 		transferDTOs = append(transferDTOs, dto.TransferResponse{
-			TransactionID:    t.TransactionID,
-			SourceAccountNum: t.SourceAccountNum,
-			DestAccountNum:   t.DestAccountNum,
-			Amount:           t.Amount,
-			Description:      t.Description,
-			Status:           t.Status,
-			CreatedAt:        parseTime(t.CreatedAt),
+			TransactionID:          t.TransactionID,
+			PayerAccountNumber:     t.PayerAccountNumber,
+			RecipientAccountNumber: t.RecipientAccountNumber,
+			Amount:                 t.Amount,
+			Description:            t.Description,
+			Status:                 t.Status,
+			CreatedAt:              parseTime(t.CreatedAt),
 		})
 	}
 
