@@ -8,6 +8,8 @@ import (
 type AccountRepository interface {
 	Create(ctx context.Context, account *model.Account) error
 	AccountNumberExists(ctx context.Context, accountNumber string) (bool, error)
+	GetByAccountNumber(ctx context.Context, accountNumber string) (*model.Account, error)
+	Update(ctx context.Context, account *model.Account) error
 	FindAllByClientID(ctx context.Context, clientID uint) ([]model.Account, error)
 	FindByAccountNumberAndClientID(ctx context.Context, accountNumber string, clientID uint) (*model.Account, error)
 	UpdateName(ctx context.Context, accountNumber string, name string) error

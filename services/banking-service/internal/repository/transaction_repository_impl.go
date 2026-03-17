@@ -30,9 +30,24 @@ func (r *transactionRepository) GetByID(ctx context.Context, id uint) (*model.Tr
 	return &transaction, nil
 }
 
+func (r *transactionRepository) GetByPayerAccountNumber(ctx context.Context, accountNumber string) ([]*model.Transaction, error) {
+	var transactions []*model.Transaction
+	err := r.db.WithContext(ctx).Where("payer_account_number = ?", accountNumber).Find(&transactions).Error
+	if err != nil {
+		return nil, err
+	}
+	return transactions, nil
+}
+
+func (r *transactionRepository) GetByRecipientAccountNumber(ctx context.Context, accountNumber string) ([]*model.Transaction, error) {
+	var transactions []*model.Transaction
+	err := r.db.WithContext(ctx).Where("recipient_account_number = ?", accountNumber).Find(&transactions).Error
+	if err != nil {
+		return nil, err
+	}
+	return transactions, nil
+}
 
 func (r *transactionRepository) Update(ctx context.Context, transaction *model.Transaction) error {
-	db := db.DBFromContext(ctx, r.db)
-
-	return db.WithContext(ctx).Save(transaction).Error
+	return r.db.WithContext(ctx).Save(transaction).Error
 }
