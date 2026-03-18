@@ -56,6 +56,7 @@ func (s *PaymentService) CreatePayment(ctx context.Context, req dto.CreatePaymen
 		return nil, errors.InternalErr(err)
 	}
 
+	payment.Transaction = *transaction
 	return payment, nil
 }
 
@@ -72,6 +73,9 @@ func (s *PaymentService) VerifyPayment(ctx context.Context, id uint, code string
 	payment, err := s.paymentRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, errors.InternalErr(err)
+	}
+	if payment == nil {
+		return nil, errors.NotFoundErr("payment not found")
 	}
 
 	// TODO: mobile verification, update transaction status
