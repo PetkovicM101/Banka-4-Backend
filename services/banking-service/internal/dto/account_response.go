@@ -48,6 +48,6 @@ func ToAccountResponse(a *model.Account) AccountResponse {
 		MonthlyLimit:     a.MonthlyLimit,
 		DailySpending:    a.DailySpending,
 		MonthlySpending:  a.MonthlySpending,
-		ReservedFunds:    0, //TODO change later
+		ReservedFunds:    a.Balance - a.AvailableBalance,
 	}
 }

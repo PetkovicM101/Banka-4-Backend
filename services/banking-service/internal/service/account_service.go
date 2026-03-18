@@ -113,8 +113,7 @@ func (s *AccountService) Create(ctx context.Context, req dto.CreateAccountReques
 	dailyLimit := model.DefaultDailyLimitRSD
 	monthlyLimit := model.DefaultMonthlyLimitRSD
 	if req.AccountKind == model.AccountKindForeign {
-		dailyLimit = model.DefaultDailyLimitForeign
-		monthlyLimit = model.DefaultMonthlyLimitForeign
+		// TODO Use Exchange Office to change limits.
 	}
 
 	account := &model.Account{
@@ -217,9 +216,6 @@ func (s *AccountService) ConfirmLimitsChange(ctx context.Context, accountNumber 
 		return errors.NotFoundErr("no pending limits change for this account")
 	}
 
-	if token.Used {
-		return errors.BadRequestErr("verification code has already been used")
-	}
 	if time.Now().After(token.ExpiresAt) {
 		return errors.BadRequestErr("verification code has expired")
 	}

@@ -3,7 +3,6 @@ package handler
 import (
 	"banking-service/internal/dto"
 	"banking-service/internal/service"
-	"common/pkg/auth"
 	"common/pkg/errors"
 	"math"
 	"net/http"
@@ -83,15 +82,18 @@ func (h *PaymentHandler) VerifyPayment(c *gin.Context) {
 // @Security BearerAuth
 // @Router /api/accounts/{accountNumber}/payments [get]
 func (h *PaymentHandler) GetAccountPayments(c *gin.Context) {
-	authCtx := auth.GetAuth(c)
-	if authCtx == nil || authCtx.ClientID == nil {
-		c.Error(errors.BadRequestErr("client authentication required"))
+	valStr := c.Param("clientId")
+
+	idVal, err := strconv.ParseUint(valStr, 10, 64)
+
+	if err != nil {
+		c.Error(errors.BadRequestErr("client id must be a number"))
 		return
 	}
 
 	accountNumber := c.Param("accountNumber")
 
-	if _, err := h.accountService.GetAccountDetails(c.Request.Context(), accountNumber, *authCtx.ClientID); err != nil {
+	if _, err := h.accountService.GetAccountDetails(c.Request.Context(), accountNumber, uint(idVal)); err != nil {
 		c.Error(err)
 		return
 	}

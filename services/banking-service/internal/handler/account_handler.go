@@ -3,11 +3,10 @@ package handler
 import (
 	"banking-service/internal/dto"
 	"banking-service/internal/service"
-	"common/pkg/auth"
 	"common/pkg/errors"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
 )
 
 type AccountHandler struct {
@@ -47,24 +46,39 @@ func (h *AccountHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, dto.ToAccountResponse(account))
 }
 
+func GetParamUint(c *gin.Context, key string) (uint, bool) {
+	valStr := c.Param(key)
+
+	val, err := strconv.ParseUint(valStr, 10, 64)
+
+	if err != nil {
+		c.Error(errors.BadRequestErr("client id must be a number"))
+		return 0, false
+	}
+
+	return uint(val), true
+}
+
 // GetClientAccounts godoc
 // @Summary List client accounts
 // @Description Returns all active accounts belonging to the authenticated client
 // @Tags accounts
 // @Produce json
+// @Param clientId path string true "Client id"
 // @Success 200 {array} dto.AccountSummaryResponse
 // @Failure 400 {object} errors.AppError
 // @Failure 401 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/accounts [get]
+// @Router /api/clients/{clientId}/accounts [get]
+
 func (h *AccountHandler) GetClientAccounts(c *gin.Context) {
-	authCtx := auth.GetAuth(c)
-	if authCtx == nil || authCtx.ClientID == nil {
-		c.Error(errors.BadRequestErr("client authentication required"))
+
+	clientId, ok := GetParamUint(c, "clientId")
+	if !ok {
 		return
 	}
 
-	accounts, err := h.service.GetClientAccounts(c.Request.Context(), *authCtx.ClientID)
+	accounts, err := h.service.GetClientAccounts(c.Request.Context(), clientId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -83,21 +97,22 @@ func (h *AccountHandler) GetClientAccounts(c *gin.Context) {
 // @Tags accounts
 // @Produce json
 // @Param accountNumber path string true "Account number"
+// @Param clientId path string true "Client id"
 // @Success 200 {object} dto.AccountResponse
 // @Failure 400 {object} errors.AppError
 // @Failure 403 {object} errors.AppError
 // @Failure 404 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/accounts/{accountNumber} [get]
+// @Router /api/clients/{clientId}/accounts/{accountNumber} [get]
+
 func (h *AccountHandler) GetAccountDetails(c *gin.Context) {
-	authCtx := auth.GetAuth(c)
-	if authCtx == nil || authCtx.ClientID == nil {
-		c.Error(errors.BadRequestErr("client authentication required"))
+	clientId, ok := GetParamUint(c, "clientId")
+	if !ok {
 		return
 	}
 
 	accountNumber := c.Param("accountNumber")
-	account, err := h.service.GetAccountDetails(c.Request.Context(), accountNumber, *authCtx.ClientID)
+	account, err := h.service.GetAccountDetails(c.Request.Context(), accountNumber, clientId)
 	if err != nil {
 		c.Error(err)
 		return
@@ -119,11 +134,10 @@ func (h *AccountHandler) GetAccountDetails(c *gin.Context) {
 // @Failure 403 {object} errors.AppError
 // @Failure 404 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/accounts/{accountNumber}/name [put]
+// @Router /api/clients/{clientId}/accounts/{accountNumber}/name [get]
 func (h *AccountHandler) UpdateAccountName(c *gin.Context) {
-	authCtx := auth.GetAuth(c)
-	if authCtx == nil || authCtx.ClientID == nil {
-		c.Error(errors.BadRequestErr("client authentication required"))
+	clientId, ok := GetParamUint(c, "clientId")
+	if !ok {
 		return
 	}
 
@@ -135,7 +149,7 @@ func (h *AccountHandler) UpdateAccountName(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.UpdateAccountName(c.Request.Context(), accountNumber, *authCtx.ClientID, req.Name); err != nil {
+	if err := h.service.UpdateAccountName(c.Request.Context(), accountNumber, clientId, req.Name); err != nil {
 		c.Error(err)
 		return
 	}
@@ -156,11 +170,10 @@ func (h *AccountHandler) UpdateAccountName(c *gin.Context) {
 // @Failure 403 {object} errors.AppError
 // @Failure 404 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/accounts/{accountNumber}/limits/request [post]
+// @Router /api/clients/{clientId}/accounts/{accountNumber}/limits/request [post]
 func (h *AccountHandler) RequestLimitsChange(c *gin.Context) {
-	authCtx := auth.GetAuth(c)
-	if authCtx == nil || authCtx.ClientID == nil {
-		c.Error(errors.BadRequestErr("client authentication required"))
+	clientId, ok := GetParamUint(c, "clientId")
+	if !ok {
 		return
 	}
 
@@ -172,7 +185,7 @@ func (h *AccountHandler) RequestLimitsChange(c *gin.Context) {
 		return
 	}
 
-	code, err := h.service.RequestLimitsChange(c.Request.Context(), accountNumber, *authCtx.ClientID, req.DailyLimit, req.MonthlyLimit)
+	code, err := h.service.RequestLimitsChange(c.Request.Context(), accountNumber, clientId, req.DailyLimit, req.MonthlyLimit)
 	if err != nil {
 		c.Error(err)
 		return
@@ -194,11 +207,10 @@ func (h *AccountHandler) RequestLimitsChange(c *gin.Context) {
 // @Failure 403 {object} errors.AppError
 // @Failure 404 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/accounts/{accountNumber}/limits [put]
+// @Router /api/clients/{clientId}/accounts/{accountNumber}/limits [put]
 func (h *AccountHandler) ConfirmLimitsChange(c *gin.Context) {
-	authCtx := auth.GetAuth(c)
-	if authCtx == nil || authCtx.ClientID == nil {
-		c.Error(errors.BadRequestErr("client authentication required"))
+	clientId, ok := GetParamUint(c, "clientId")
+	if !ok {
 		return
 	}
 
@@ -210,7 +222,7 @@ func (h *AccountHandler) ConfirmLimitsChange(c *gin.Context) {
 		return
 	}
 
-	if err := h.service.ConfirmLimitsChange(c.Request.Context(), accountNumber, *authCtx.ClientID, req.Code); err != nil {
+	if err := h.service.ConfirmLimitsChange(c.Request.Context(), accountNumber, clientId, req.Code); err != nil {
 		c.Error(err)
 		return
 	}

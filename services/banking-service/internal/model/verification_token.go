@@ -10,5 +10,4 @@ type VerificationToken struct {
 	NewDailyLimit   float64   `gorm:"not null"`
 	NewMonthlyLimit float64   `gorm:"not null"`
 	ExpiresAt       time.Time `gorm:"not null"`
-	Used            bool      `gorm:"default:false"`
 }
