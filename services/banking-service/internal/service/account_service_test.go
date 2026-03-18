@@ -19,7 +19,7 @@ import (
 type fakeAccountRepo struct {
 	accNumExists    bool
 	accNumExistsErr error
-	createErr error
+	createErr       error
 }
 
 func (r *fakeAccountRepo) Create(_ context.Context, _ *model.Account) error {
@@ -29,7 +29,13 @@ func (r *fakeAccountRepo) Create(_ context.Context, _ *model.Account) error {
 func (r *fakeAccountRepo) AccountNumberExists(_ context.Context, _ string) (bool, error) {
 	return r.accNumExists, r.accNumExistsErr
 }
+func (r *fakeAccountRepo) FindByAccountNumber(_ context.Context, _ string) (*model.Account, error) {
+	return nil, nil
+}
 
+func (r *fakeAccountRepo) UpdateBalance(_ context.Context, _ *model.Account) error {
+	return nil
+}
 
 type fakeAccountUserClient struct {
 	clientErr   error

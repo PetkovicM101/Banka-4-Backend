@@ -28,7 +28,7 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 
 	payment, err := h.service.CreatePayment(c.Request.Context(), req)
 	if err != nil {
-		c.Error(errors.InternalErr(err))
+		c.Error(err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (h *PaymentHandler) VerifyPayment(c *gin.Context) {
 
 	payment, err := h.service.VerifyPayment(c.Request.Context(), uint(id), req.Code)
 	if err != nil {
-		c.Error(errors.InternalErr(err))
+		c.Error(err)
 		return
 	}
 

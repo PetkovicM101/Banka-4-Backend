@@ -59,6 +59,9 @@ func main() {
 			repository.NewCompanyRepository,
 			repository.NewExchangeRateRepository,
 			service.NewExchangeService,
+			func(svc *service.ExchangeService) service.CurrencyConverter {
+				return svc
+			},
 			repository.NewPaymentRepository,
 			repository.NewTransactionRepository,
 			service.NewAccountService,

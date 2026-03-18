@@ -19,3 +19,6 @@ func (r *transactionRepository) Create(ctx context.Context, transaction *model.T
 	return r.db.WithContext(ctx).Create(transaction).Error
 }
 
+func (r *transactionRepository) Update(ctx context.Context, transaction *model.Transaction) error {
+	return r.db.WithContext(ctx).Save(transaction).Error
+}

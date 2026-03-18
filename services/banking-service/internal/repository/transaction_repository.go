@@ -7,4 +7,5 @@ import (
 
 type TransactionRepository interface {
 	Create(ctx context.Context, transaction *model.Transaction) error
+	Update(ctx context.Context, transaction *model.Transaction) error
 }
