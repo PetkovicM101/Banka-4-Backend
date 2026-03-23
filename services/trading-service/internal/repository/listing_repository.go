@@ -6,4 +6,5 @@ type ListingRepository interface {
 	FindAll() ([]model.Listing, error)
 	Upsert(listing *model.Listing) error
 	UpdatePriceAndAsk(listing *model.Listing, price, ask float64) error
+	Count(count *int64) error
 }

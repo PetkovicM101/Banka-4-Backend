@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/handler"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/config"
@@ -63,20 +65,14 @@ func main() {
 				&model.ListingDailyPriceInfo{},
 			)
 		}),
-		fx.Invoke(func(db *gorm.DB, svc *service.StockService) error {
-			var count int64
-			if err := db.Model(&model.Listing{}).Count(&count).Error; err != nil {
-				return err
-			}
-			if count == 0 {
-				if err := svc.SeedStocks(10); err != nil {
-					return err
-				}
-				go svc.StartRefreshLoopNoInitial()
-			} else {
-				go svc.StartRefreshLoop()
-			}
-			return nil
+		fx.Invoke(func(lifecycle fx.Lifecycle, svc *service.StockService) {
+			lifecycle.Append(fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					svc.Initialize(ctx)
+					svc.StartBackgroundRefresh(ctx)
+					return nil
+				},
+			})
 		}),
 		fx.Invoke(server.NewServer),
 	).Run()

@@ -34,3 +34,6 @@ func (r *listingRepository) UpdatePriceAndAsk(listing *model.Listing, price, ask
 		Ask:   ask,
 	}).Error
 }
+func (r *listingRepository) Count(count *int64) error {
+	return r.db.Model(&model.Listing{}).Count(count).Error
+}
