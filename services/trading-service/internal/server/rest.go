@@ -61,10 +61,10 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, exchangeHa
 	{
 		api.GET("/health", healthHandler.Health)
 
-		exchange := api.Group("/exchange")
+		exchanges := api.Group("/exchange")
 		{
-			exchange.GET("", exchangeHandler.GetAll)
-			exchange.PATCH("/:micCode/toggle", exchangeHandler.ToggleTradingEnabled)
+			exchanges.GET("", exchangeHandler.GetAll)
+			exchanges.PATCH("/:micCode/toggle", exchangeHandler.ToggleTradingEnabled)
 		}
 	}
 }

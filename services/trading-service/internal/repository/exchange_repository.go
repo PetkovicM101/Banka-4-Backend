@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 
@@ -34,7 +35,7 @@ func (r *ExchangeRepository) FindAll(ctx context.Context, page, pageSize int) ([
 func (r *ExchangeRepository) FindByMicCode(ctx context.Context, micCode string) (*model.Exchange, error) {
 	var exchange model.Exchange
 	result := r.db.WithContext(ctx).Where("mic_code = ?", micCode).First(&exchange)
-	if result.Error == gorm.ErrRecordNotFound {
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 	return &exchange, result.Error
