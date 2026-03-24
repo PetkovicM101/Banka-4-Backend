@@ -8,6 +8,7 @@ import (
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/config"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/permission"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/repository"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/server"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/service"
 	"go.uber.org/fx"
@@ -46,6 +47,7 @@ func main() {
 				return permission.NewGrpcPermissionProvider(c)
 			},
 			handler.NewHealthHandler,
+			repository.NewForexRepository,
 			func(cfg *config.Configuration) client.ExchangeRateClient {
 				return client.NewExchangeRateClient(cfg.ExchangeRateAPIKey)
 			},
