@@ -65,14 +65,11 @@ func main() {
 				&model.ListingDailyPriceInfo{},
 			)
 		}),
-		fx.Invoke(func(lifecycle fx.Lifecycle, svc *service.StockService) {
-			lifecycle.Append(fx.Hook{
-				OnStart: func(ctx context.Context) error {
-					svc.Initialize(ctx)
-					svc.StartBackgroundRefresh()
-					return nil
-				},
-			})
+		fx.Invoke(func(svc *service.StockService) {
+			go func() {
+				svc.Initialize(context.Background())
+				svc.StartBackgroundRefresh()
+			}()
 		}),
 		fx.Invoke(server.NewServer),
 	).Run()
