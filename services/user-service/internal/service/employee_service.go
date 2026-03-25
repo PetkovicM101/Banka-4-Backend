@@ -263,3 +263,33 @@ func mapPermissions(employeeID uint, permissions []permission.Permission) []mode
 	}
 	return result
 }
+
+func (s *EmployeeService) DeactivateEmployee(ctx context.Context, id uint) error {
+	employee, err := s.employeeRepo.FindByID(ctx, id)
+	if err != nil {
+		return errors.InternalErr(err)
+	}
+	if employee == nil {
+		return errors.NotFoundErr("employee not found")
+	}
+
+	if employee.IsAdmin() {
+		return errors.ForbiddenErr("cannot deactivate admin")
+	}
+
+	identity, err := s.identityRepo.FindByID(ctx, employee.IdentityID)
+	if err != nil {
+		return errors.InternalErr(err)
+	}
+	if identity == nil {
+		return errors.NotFoundErr("identity not found")
+	}
+
+	identity.Active = false
+
+	if err := s.identityRepo.Update(ctx, identity); err != nil {
+		return errors.InternalErr(err)
+	}
+
+	return nil
+}
