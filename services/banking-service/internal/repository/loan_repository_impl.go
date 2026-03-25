@@ -5,9 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"gorm.io/gorm"
-
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/banking-service/internal/model"
+	"gorm.io/gorm"
 )
 
 type loanRepository struct {
@@ -17,10 +16,12 @@ type loanRepository struct {
 func NewLoanRepository(db *gorm.DB) LoanRepository {
 	return &loanRepository{db: db}
 }
+
 func (r *loanRepository) CreateLoan(ctx context.Context, loan *model.Loan) error {
 	return r.db.WithContext(ctx).Create(loan).Error
 }
-func (r *loanRequestRepository) FindByClientID(ctx context.Context, clientID uint, sortByAmountDesc bool) ([]model.LoanRequest, error) {
+
+func (r *loanRepository) FindByClientID(ctx context.Context, clientID uint, sortByAmountDesc bool) ([]model.LoanRequest, error) {
 	var loans []model.LoanRequest
 
 	query := r.db.WithContext(ctx).Where("client_id = ?", clientID).Preload("LoanType")
@@ -37,7 +38,7 @@ func (r *loanRequestRepository) FindByClientID(ctx context.Context, clientID uin
 	return loans, nil
 }
 
-func (r *loanRequestRepository) FindByIDAndClientID(ctx context.Context, id uint, clientID uint) (*model.LoanRequest, error) {
+func (r *loanRepository) FindByIDAndClientID(ctx context.Context, id uint, clientID uint) (*model.LoanRequest, error) {
 	var loan model.LoanRequest
 	if err := r.db.WithContext(ctx).Where("id = ? AND client_id = ?", id, clientID).Preload("LoanType").First(&loan).Error; err != nil {
 		return nil, err

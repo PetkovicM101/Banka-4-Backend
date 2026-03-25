@@ -34,14 +34,6 @@ func (f *fakeLoanRequestRepo) CreateRequest(_ context.Context, r *model.LoanRequ
 	return nil
 }
 
-func (f *fakeLoanRequestRepo) FindByClientID(_ context.Context, _ uint, _ bool) ([]model.LoanRequest, error) {
-	return f.requests, f.findErr
-}
-
-func (f *fakeLoanRequestRepo) FindByIDAndClientID(_ context.Context, _ uint, _ uint) (*model.LoanRequest, error) {
-	return f.request, f.findErr
-}
-
 func (f *fakeLoanRequestRepo) FindAll(_ context.Context, _ *dto.ListLoanRequestsQuery) ([]model.LoanRequest, int64, error) {
 	return f.requests, f.total, f.findAllErr
 }
@@ -61,11 +53,21 @@ func (f *fakeLoanRequestRepo) Update(_ context.Context, r *model.LoanRequest) er
 // ── Fake Loan Repository ─────────────────────────────────────────────────────
 
 type fakeLoanRepo struct {
+	request   *model.LoanRequest
+	requests  []model.LoanRequest
 	loan      *model.Loan
 	loans     []model.Loan
 	createErr error
 	findErr   error
 	updateErr error
+}
+
+func (f *fakeLoanRepo) FindByClientID(_ context.Context, _ uint, _ bool) ([]model.LoanRequest, error) {
+	return f.requests, f.findErr
+}
+
+func (f *fakeLoanRepo) FindByIDAndClientID(_ context.Context, _ uint, _ uint) (*model.LoanRequest, error) {
+	return f.request, f.findErr
 }
 
 func (f *fakeLoanRepo) CreateLoan(_ context.Context, _ *model.Loan) error {
