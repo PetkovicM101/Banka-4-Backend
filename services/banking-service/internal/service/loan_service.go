@@ -13,23 +13,26 @@ import (
 )
 
 type LoanService struct {
-	accountRepo  repository.AccountRepository
-	loanTypeRepo repository.LoanTypeRepository
-	loanRepo     repository.LoanRepository
-	txProcessor  *TransactionProcessor
+	accountRepo     repository.AccountRepository
+	loanTypeRepo    repository.LoanTypeRepository
+	loanRepo        repository.LoanRepository
+	loanRequestRepo repository.LoanRequestRepository
+	txProcessor     *TransactionProcessor
 }
 
 func NewLoanService(
 	accountRepo repository.AccountRepository,
 	loanTypeRepo repository.LoanTypeRepository,
 	loanRepo repository.LoanRepository,
+	loanRequestRepo repository.LoanRequestRepository,
 	txProcessor *TransactionProcessor,
 ) *LoanService {
 	return &LoanService{
-		accountRepo:  accountRepo,
-		loanTypeRepo: loanTypeRepo,
-		loanRepo:     loanRepo,
-		txProcessor:  txProcessor,
+		accountRepo:     accountRepo,
+		loanTypeRepo:    loanTypeRepo,
+		loanRepo:        loanRepo,
+		loanRequestRepo: loanRequestRepo,
+		txProcessor:     txProcessor,
 	}
 }
 
@@ -157,7 +160,7 @@ func (s *LoanService) GetLoanDetails(ctx context.Context, clientID uint, loanID 
 }
 
 func (s *LoanService) GetLoanRequests(ctx context.Context, query *dto.ListLoanRequestsQuery) ([]dto.LoanRequestResponse, int64, error) {
-	requests, total, err := s.loanRepo.FindAll(ctx, query)
+	requests, total, err := s.loanRequestRepo.FindAll(ctx, query)
 	if err != nil {
 		return nil, 0, errors.InternalErr(err)
 	}
@@ -180,7 +183,7 @@ func (s *LoanService) GetLoanRequests(ctx context.Context, query *dto.ListLoanRe
 }
 
 func (s *LoanService) ApproveLoanRequest(ctx context.Context, id uint) error {
-	request, err := s.loanRepo.FindByID(ctx, id)
+	request, err := s.loanRequestRepo.FindByID(ctx, id)
 	if err != nil {
 		return errors.InternalErr(err)
 	}
@@ -236,7 +239,7 @@ func (s *LoanService) ApproveLoanRequest(ctx context.Context, id uint) error {
 	}
 
 	request.Status = model.LoanRequestApproved
-	if err := s.loanRepo.Update(ctx, request); err != nil {
+	if err := s.loanRequestRepo.Update(ctx, request); err != nil {
 		return errors.InternalErr(err)
 	}
 
@@ -279,7 +282,7 @@ func (s *LoanService) ApproveLoanRequest(ctx context.Context, id uint) error {
 }
 
 func (s *LoanService) RejectLoanRequest(ctx context.Context, id uint) error {
-	request, err := s.loanRepo.FindByID(ctx, id)
+	request, err := s.loanRequestRepo.FindByID(ctx, id)
 	if err != nil {
 		return errors.InternalErr(err)
 	}
@@ -293,7 +296,7 @@ func (s *LoanService) RejectLoanRequest(ctx context.Context, id uint) error {
 	}
 
 	request.Status = model.LoanRequestRejected
-	return s.loanRepo.Update(ctx, request)
+	return s.loanRequestRepo.Update(ctx, request)
 }
 
 // AdjustVariableRates mesecno azurira kamatnu stopu za varijabilne kredite.
