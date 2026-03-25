@@ -313,7 +313,7 @@ var seedTransactions = []struct {
 	{
 		Transaction: model.Transaction{
 			PayerAccountNumber:     "444000112345678911",
-			RecipientAccountNumber: "444000223456789011",
+			RecipientAccountNumber: "444000112345678922",
 			StartAmount:            12000.00,
 			StartCurrencyCode:      "RSD",
 			EndAmount:              12000.00,
@@ -349,7 +349,7 @@ var seedTransactions = []struct {
 	{
 		Transaction: model.Transaction{
 			PayerAccountNumber:     "444000112345678911",
-			RecipientAccountNumber: "444000334567890111",
+			RecipientAccountNumber: "444000112345678922",
 			StartAmount:            8500.00,
 			StartCurrencyCode:      "RSD",
 			EndAmount:              8500.00,
@@ -367,7 +367,7 @@ var seedTransactions = []struct {
 	{
 		Transaction: model.Transaction{
 			PayerAccountNumber:     "444000112345678911",
-			RecipientAccountNumber: "444000445678901211",
+			RecipientAccountNumber: "444000112345678921",
 			StartAmount:            50000.00,
 			StartCurrencyCode:      "RSD",
 			EndAmount:              50000.00,

@@ -104,6 +104,15 @@ type Account struct {
 	MonthlyLimit    float64 `gorm:"not null;default:0"`
 	DailySpending   float64 `gorm:"not null;default:0"`
 	MonthlySpending float64 `gorm:"not null;default:0"`
+
+	Payees []Payee `gorm:"foreignKey:AccountNumber"`
+	VerificationTokens []VerificationToken `gorm:"foreignKey:AccountNumber"`
+	CardRequests []CardRequest `gorm:"foreignKey:AccountNumber"`
+	AuthorizedPersons []AuthorizedPerson `gorm:"foreignKey:AccountNumber"`
+	LoanRequests []LoanRequest `gorm:"foreignKey:AccountNumber"`
+	TransactionsRecipient []Transaction `gorm:"foreignKey:RecipientAccountNumber"`
+	TransactionsPayer []Transaction `gorm:"foreignKey:PayerAccountNumber"`
+	Cards []Card `gorm:"foreignKey:AccountNumber"`
 }
 
 func GetTypeCode(accountKind AccountKind, accountType AccountType, subtype Subtype) string {
