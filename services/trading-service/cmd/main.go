@@ -6,7 +6,9 @@ import (
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/config"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/permission"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/seed"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/server"
+
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
@@ -48,10 +50,14 @@ func main() {
 			return logging.Init(cfg.Env)
 		}),
 		fx.Invoke(func(db *gorm.DB) error {
-			return db.AutoMigrate(
+			if err := db.AutoMigrate(
 				&model.Listing{},
 				&model.ListingDailyPriceInfo{},
-			)
+				&model.FuturesContract{},
+			); err != nil {
+				return err
+			}
+			return seed.Run(db)
 		}),
 		fx.Invoke(server.NewServer),
 	).Run()
