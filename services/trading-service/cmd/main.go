@@ -13,7 +13,6 @@ import (
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/seed"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/server"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/service"
-
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
@@ -33,7 +32,7 @@ import (
 // @name Authorization
 // @description JWT Authorization header using the Bearer scheme.
 func main() {
-	app := fx.New(
+	fx.New(
 		fx.Provide(
 			config.Load,
 			func(cfg *config.Configuration) (*gorm.DB, error) {
@@ -78,8 +77,6 @@ func main() {
 				&model.ForexPair{},
 			); err != nil {
 				log.Fatalf("AutoMigrate failed: %v", err)
-			} else {
-				log.Println("AutoMigrate successful ✅")
 			}
 		}),
 		fx.Invoke(func(svc *service.StockService) {
@@ -97,17 +94,13 @@ func main() {
 				OnStart: func(ctx context.Context) error {
 					forexService.Initialize(ctx)
 					forexService.Start()
-					log.Println("ForexService background refresh started ✅")
 					return nil
 				},
 				OnStop: func(ctx context.Context) error {
 					forexService.Stop()
-					log.Println("ForexService stopped ✅")
 					return nil
 				},
 			})
 		}),
-	)
-
-	app.Run()
+	).Run()
 }
