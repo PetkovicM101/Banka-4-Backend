@@ -29,6 +29,7 @@ func NewServer(
 	healthHandler *handler.HealthHandler,
 	authHandler *handler.AuthHandler,
 	empHandler *handler.EmployeeHandler,
+	actuaryHandler *handler.ActuaryHandler,
 	clientHandler *handler.ClientHandler,
 	verifier auth.TokenVerifier,
 	permissions auth.PermissionProvider,
@@ -36,7 +37,7 @@ func NewServer(
 	r := gin.New()
 
 	InitRouter(r, cfg)
-	SetupRoutes(r, healthHandler, authHandler, empHandler, clientHandler, verifier, permissions)
+	SetupRoutes(r, healthHandler, authHandler, empHandler, actuaryHandler, clientHandler, verifier, permissions)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -69,6 +70,7 @@ func SetupRoutes(
 	healthHandler *handler.HealthHandler,
 	authHandler *handler.AuthHandler,
 	empHandler *handler.EmployeeHandler,
+	actuaryHandler *handler.ActuaryHandler,
 	clientHandler *handler.ClientHandler,
 	verifier auth.TokenVerifier,
 	permissions auth.PermissionProvider,
@@ -101,6 +103,14 @@ func SetupRoutes(
 			emp.GET("/:id", auth.RequirePermission(permission.EmployeeView), empHandler.GetEmployee)
 			emp.PATCH("/:id", auth.RequirePermission(permission.EmployeeUpdate), empHandler.UpdateEmployee)
 			emp.GET("", auth.RequirePermission(permission.EmployeeView), empHandler.ListEmployees)
+		}
+
+		act := api.Group("/actuaries")
+		act.Use(auth.Middleware(verifier, permissions))
+		{
+			act.GET("", auth.RequirePermission(permission.EmployeeView), actuaryHandler.ListActuaries)
+			act.PATCH("/:id", actuaryHandler.UpdateActuarySettings)
+			act.POST("/:id/reset-used-limit", actuaryHandler.ResetUsedLimit)
 		}
 
 		cli := api.Group("/clients")
