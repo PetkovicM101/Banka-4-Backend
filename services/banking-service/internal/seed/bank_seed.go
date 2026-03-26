@@ -119,6 +119,10 @@ var loanTypes = []model.LoanType{
 	},
 }
 
+func getUintPointer(value uint) *uint {
+    return &value
+}
+
 var accounts = []struct {
 	AccountNumber string
 	Name          string
@@ -194,7 +198,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000000",
 		Name:          "Bank RSD Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -208,7 +212,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000001",
 		Name:          "Bank EUR Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -222,7 +226,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000002",
 		Name:          "Bank USD Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -236,7 +240,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000003",
 		Name:          "Bank CHF Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -250,7 +254,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000004",
 		Name:          "Bank GBP Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -264,7 +268,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000005",
 		Name:          "Bank JPY Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -278,7 +282,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000006",
 		Name:          "Bank CAD Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -292,7 +296,7 @@ var accounts = []struct {
 		AccountNumber: "444000000000000007",
 		Name:          "Bank AUD Account",
 		ClientID:      1,
-		CompanyID:     1,
+		CompanyID:     getUintPointer(1),
 		EmployeeID:    3,
 		Balance:       1_000_000_000.00,
 		ExpiresAt:     time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC),
