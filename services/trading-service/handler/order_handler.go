@@ -54,7 +54,7 @@ func (h *OrderHandler) GetOrders(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dto.ListOrdersResponse{
-		Data:     dto.ToOrderResponseList(orders),
+		Data:     dto.ToOrderSummaryResponseList(orders),
 		Total:    total,
 		Page:     query.Page,
 		PageSize: query.PageSize,
