@@ -118,3 +118,40 @@ func (h *ListingHandler) GetForex(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, result)
 }
+
+// GetOptions godoc
+// @Summary List options
+// @Tags listings
+// @Produce json
+// @Param search query string false "Search by ticker or name"
+// @Param exchange query string false "Exchange MIC prefix"
+// @Param price_min query number false "Min price"
+// @Param price_max query number false "Max price"
+// @Param ask_min query number false "Min ask"
+// @Param ask_max query number false "Max ask"
+// @Param bid_min query number false "Min bid"
+// @Param bid_max query number false "Max bid"
+// @Param volume_min query integer false "Min volume"
+// @Param volume_max query integer false "Max volume"
+// @Param settlement_date query string false "Filter by settlement date (YYYY-MM-DD)"
+// @Param sort_by query string false "price|volume|maintenance_margin"
+// @Param sort_dir query string false "asc|desc"
+// @Param page query integer false "Page"
+// @Param page_size query integer false "Page size"
+// @Success 200 {object} dto.PaginatedResponse[dto.OptionResponse]
+// @Router /api/listings/options [get]
+func (h *ListingHandler) GetOptions(c *gin.Context) {
+	var q dto.ListingQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		c.Error(errors.BadRequestErr(err.Error()))
+		return
+	}
+	q.Normalize()
+
+	result, err := h.svc.GetOptions(c.Request.Context(), q)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, result)
+}

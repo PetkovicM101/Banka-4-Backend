@@ -71,6 +71,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, exchangeHa
 			listings.GET("/stocks", listingHandler.GetStocks)
 			listings.GET("/futures", listingHandler.GetFutures)
 			listings.GET("/forex", listingHandler.GetForex)
+			listings.GET("/options", listingHandler.GetOptions)
 		}
 	}
 }

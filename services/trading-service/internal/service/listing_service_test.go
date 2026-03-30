@@ -104,6 +104,7 @@ func TestGetStocks_ReturnsAll(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetStocks(context.Background(), dto.ListingQuery{Page: 1, PageSize: 10})
@@ -127,6 +128,7 @@ func TestGetStocks_FilterByExchange(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetStocks(context.Background(), dto.ListingQuery{
@@ -151,6 +153,7 @@ func TestGetStocks_FilterBySearch(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetStocks(context.Background(), dto.ListingQuery{
@@ -178,6 +181,7 @@ func TestGetStocks_InitialMarginCost(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetStocks(context.Background(), dto.ListingQuery{Page: 1, PageSize: 10})
@@ -203,6 +207,7 @@ func TestGetFutures_ReturnsAll(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetFutures(context.Background(), dto.ListingQuery{Page: 1, PageSize: 10})
@@ -226,6 +231,7 @@ func TestGetFutures_ContractDataPresent(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetFutures(context.Background(), dto.ListingQuery{Page: 1, PageSize: 10})
@@ -255,6 +261,7 @@ func TestGetForex_ReturnsAll(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetForex(context.Background(), dto.ListingQuery{Page: 1, PageSize: 10})
@@ -275,6 +282,7 @@ func TestGetForex_TickerFormat(t *testing.T) {
 		repository.NewListingRepository(db),
 		repository.NewFuturesRepository(db),
 		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
 	)
 
 	result, err := svc.GetForex(context.Background(), dto.ListingQuery{Page: 1, PageSize: 10})

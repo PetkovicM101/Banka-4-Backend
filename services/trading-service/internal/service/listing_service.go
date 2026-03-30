@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 
 	commonErrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
@@ -13,17 +14,20 @@ type ListingService struct {
 	listingRepo repository.ListingRepository
 	futuresRepo repository.FuturesRepository
 	forexRepo   repository.ForexRepository
+	optionRepo  repository.OptionRepository
 }
 
 func NewListingService(
 	listingRepo repository.ListingRepository,
 	futuresRepo repository.FuturesRepository,
 	forexRepo repository.ForexRepository,
+	optionRepo repository.OptionRepository,
 ) *ListingService {
 	return &ListingService{
 		listingRepo: listingRepo,
 		futuresRepo: futuresRepo,
 		forexRepo:   forexRepo,
+		optionRepo:  optionRepo,
 	}
 }
 
@@ -33,6 +37,9 @@ func latestDaily(infos []model.ListingDailyPriceInfo) *model.ListingDailyPriceIn
 	if len(infos) == 0 {
 		return nil
 	}
+	sort.Slice(infos, func(i, j int) bool {
+		return infos[i].Date.After(infos[j].Date)
+	})
 	return &infos[0]
 }
 
@@ -82,15 +89,15 @@ func toFilter(q dto.ListingQuery) (repository.ListingFilter, error) {
 
 // --- Stocks ---
 
-func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (dto.PaginatedResponse[dto.StockResponse], error) {
+func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.StockResponse], error) {
 	filter, err := toFilter(q)
 	if err != nil {
-		return dto.PaginatedResponse[dto.StockResponse]{}, commonErrors.BadRequestErr("invalid settlement_date format")
+		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
 	}
 
 	listings, total, err := s.listingRepo.FindStocks(ctx, filter)
 	if err != nil {
-		return dto.PaginatedResponse[dto.StockResponse]{}, commonErrors.InternalErr(err)
+		return nil, commonErrors.InternalErr(err)
 	}
 
 	data := make([]dto.StockResponse, len(listings))
@@ -108,7 +115,7 @@ func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (dto
 		}
 	}
 
-	return dto.PaginatedResponse[dto.StockResponse]{
+	return &dto.PaginatedResponse[dto.StockResponse]{
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
@@ -118,18 +125,17 @@ func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (dto
 
 // --- Futures ---
 
-func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (dto.PaginatedResponse[dto.FuturesResponse], error) {
+func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.FuturesResponse], error) {
 	filter, err := toFilter(q)
 	if err != nil {
-		return dto.PaginatedResponse[dto.FuturesResponse]{}, commonErrors.BadRequestErr("invalid settlement_date format")
+		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
 	}
 
 	listings, total, err := s.listingRepo.FindFutures(ctx, filter)
 	if err != nil {
-		return dto.PaginatedResponse[dto.FuturesResponse]{}, commonErrors.InternalErr(err)
+		return nil, commonErrors.InternalErr(err)
 	}
 
-	// batch fetch futures contracts po tickerima
 	tickers := make([]string, len(listings))
 	for i, l := range listings {
 		tickers[i] = l.Ticker
@@ -137,7 +143,7 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (dt
 
 	contracts, err := s.futuresRepo.FindByTickers(ctx, tickers)
 	if err != nil {
-		return dto.PaginatedResponse[dto.FuturesResponse]{}, commonErrors.InternalErr(err)
+		return nil, commonErrors.InternalErr(err)
 	}
 
 	contractMap := make(map[string]model.FuturesContract)
@@ -157,7 +163,7 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (dt
 		}
 	}
 
-	return dto.PaginatedResponse[dto.FuturesResponse]{
+	return &dto.PaginatedResponse[dto.FuturesResponse]{
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
@@ -167,12 +173,15 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (dt
 
 // --- Forex ---
 
-func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (dto.PaginatedResponse[dto.ForexResponse], error) {
-	filter, _ := toFilter(q)
+func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.ForexResponse], error) {
+	filter, err := toFilter(q)
+	if err != nil {
+		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
+	}
 
 	pairs, total, err := s.forexRepo.FindAll(ctx, filter)
 	if err != nil {
-		return dto.PaginatedResponse[dto.ForexResponse]{}, commonErrors.InternalErr(err)
+		return nil, commonErrors.InternalErr(err)
 	}
 
 	data := make([]dto.ForexResponse, len(pairs))
@@ -186,10 +195,60 @@ func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (dto.
 		}
 	}
 
-	return dto.PaginatedResponse[dto.ForexResponse]{
+	return &dto.PaginatedResponse[dto.ForexResponse]{
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
 		PageSize: q.PageSize,
 	}, nil
+}
+
+func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.OptionResponse], error) {
+	filter, err := toFilter(q)
+	if err != nil {
+		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
+	}
+
+	listings, total, err := s.listingRepo.FindOptions(ctx, filter)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+
+	// batch fetch options po listing ID-evima
+	ids := make([]uint, len(listings))
+	for i, l := range listings {
+		ids[i] = l.ListingID
+	}
+
+	options, err := s.optionRepo.FindByListingIDs(ctx, ids)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+
+	optionMap := make(map[uint]model.Option)
+	for _, o := range options {
+		optionMap[o.ListingID] = o
+	}
+
+	data := make([]dto.OptionResponse, len(listings))
+	for i, l := range listings {
+		daily := latestDaily(l.DailyPriceInfos)
+		o := optionMap[l.ListingID]
+		data[i] = dto.OptionResponse{
+			BaseListingResponse: baseResponse(l, daily),
+			Strike:              o.StrikePrice,
+			OptionType:          string(o.OptionType),
+			SettlementDate:      o.SettlementDate,
+			ImpliedVolatility:   o.ImpliedVolatility,
+			OpenInterest:        o.OpenInterest,
+		}
+	}
+
+	result := &dto.PaginatedResponse[dto.OptionResponse]{
+		Data:     data,
+		Total:    total,
+		Page:     q.Page,
+		PageSize: q.PageSize,
+	}
+	return result, nil
 }

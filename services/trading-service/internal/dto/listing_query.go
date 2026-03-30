@@ -25,7 +25,7 @@ func (q *ListingQuery) Normalize() {
 		q.Page = 1
 	}
 	if q.PageSize <= 0 || q.PageSize > 100 {
-		q.PageSize = 20
+		q.PageSize = 10
 	}
 	if q.SortBy == "" {
 		q.SortBy = "price"

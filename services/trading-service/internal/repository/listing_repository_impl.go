@@ -16,7 +16,7 @@ func NewListingRepository(db *gorm.DB) ListingRepository {
 	return &listingRepository{db: db}
 }
 
-func (r *listingRepository) FindAll(ctx context.Context,) ([]model.Listing, error) {
+func (r *listingRepository) FindAll(ctx context.Context) ([]model.Listing, error) {
 	var listings []model.Listing
 	if err := r.db.WithContext(ctx).Find(&listings).Error; err != nil {
 		return nil, err
@@ -136,6 +136,36 @@ func (r *listingRepository) FindFutures(ctx context.Context, filter ListingFilte
 
 	if filter.SettlementDate != nil {
 		db = db.Where("futures_contracts.settlement_date::date = ?", filter.SettlementDate.Format("2006-01-02"))
+	}
+
+	if err := db.Count(&count).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := db.
+		Preload("DailyPriceInfos", func(db *gorm.DB) *gorm.DB {
+			return db.Order("date DESC").Limit(1)
+		}).
+		Order(sortColumn(filter)).
+		Limit(filter.PageSize).
+		Offset((filter.Page - 1) * filter.PageSize).
+		Find(&listings).Error
+
+	return listings, count, err
+}
+
+func (r *listingRepository) FindOptions(ctx context.Context, filter ListingFilter) ([]model.Listing, int64, error) {
+	var listings []model.Listing
+	var count int64
+
+	db := r.db.WithContext(ctx).
+		Model(&model.Listing{}).
+		Joins("INNER JOIN options ON options.listing_id = listings.listing_id")
+
+	db = applyListingFilters(db, filter)
+
+	if filter.SettlementDate != nil {
+		db = db.Where("options.settlement_date::date = ?", filter.SettlementDate.Format("2006-01-02"))
 	}
 
 	if err := db.Count(&count).Error; err != nil {
