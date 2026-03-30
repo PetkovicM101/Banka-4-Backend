@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"sort"
 
 	commonErrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
@@ -37,10 +36,14 @@ func latestDaily(infos []model.ListingDailyPriceInfo) *model.ListingDailyPriceIn
 	if len(infos) == 0 {
 		return nil
 	}
-	sort.Slice(infos, func(i, j int) bool {
-		return infos[i].Date.After(infos[j].Date)
-	})
-	return &infos[0]
+
+	latest := infos[0]
+	for _, info := range infos[1:] {
+		if info.Date.After(latest.Date) {
+			latest = info
+		}
+	}
+	return &latest
 }
 
 func baseResponse(l model.Listing, daily *model.ListingDailyPriceInfo) dto.BaseListingResponse {
