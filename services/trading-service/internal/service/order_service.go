@@ -5,6 +5,9 @@ import (
 	"math"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
@@ -14,10 +17,11 @@ import (
 )
 
 type OrderService struct {
-	orderRepo    repository.OrderRepository
-	exchangeRepo repository.ExchangeRepository
-	listingRepo  repository.ListingRepository
-	userClient   pb.UserServiceClient
+	orderRepo     repository.OrderRepository
+	exchangeRepo  repository.ExchangeRepository
+	listingRepo   repository.ListingRepository
+	userClient    pb.UserServiceClient
+	bankingClient pb.BankingServiceClient
 }
 
 func NewOrderService(
@@ -25,12 +29,14 @@ func NewOrderService(
 	exchangeRepo repository.ExchangeRepository,
 	listingRepo repository.ListingRepository,
 	userClient pb.UserServiceClient,
+	bankingClient pb.BankingServiceClient,
 ) *OrderService {
 	return &OrderService{
-		orderRepo:    orderRepo,
-		exchangeRepo: exchangeRepo,
-		listingRepo:  listingRepo,
-		userClient:   userClient,
+		orderRepo:     orderRepo,
+		exchangeRepo:  exchangeRepo,
+		listingRepo:   listingRepo,
+		userClient:    userClient,
+		bankingClient: bankingClient,
 	}
 }
 
@@ -44,8 +50,9 @@ func (s *OrderService) CreateOrder(ctx context.Context, req dto.CreateOrderReque
 		return nil, errors.UnauthorizedErr("not authenticated")
 	}
 
-	// TODO: Validate that AccountID belongs to the user and has sufficient balance.
-	//       Requires gRPC call to banking-service (not yet available).
+	if err := s.validateAccount(ctx, req.AccountNumber, authCtx); err != nil {
+		return nil, err
+	}
 
 	listing, err := s.listingRepo.FindByID(ctx, req.ListingID)
 	if err != nil {
@@ -59,23 +66,23 @@ func (s *OrderService) CreateOrder(ctx context.Context, req dto.CreateOrderReque
 	pricePerUnit := calculatePricePerUnit(req, listing)
 	afterHours := s.isAfterHours(ctx, listing.ExchangeMIC)
 	order := model.Order{
-		UserID:       authCtx.IdentityID,
-		AccountID:    req.AccountID,
-		ListingID:    req.ListingID,
-		Listing:      *listing,
-		OrderType:    req.OrderType,
-		Direction:    req.Direction,
-		Quantity:     req.Quantity,
-		ContractSize: 1,
-		PricePerUnit: pricePerUnit,
-		LimitValue:   req.LimitValue,
-		StopValue:    req.StopValue,
-		AllOrNone:    req.AllOrNone,
-		Margin:       req.Margin,
-		AfterHours:   afterHours,
-		IsDone:       false,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
+		UserID:        authCtx.IdentityID,
+		AccountNumber: req.AccountNumber,
+		ListingID:     req.ListingID,
+		Listing:       *listing,
+		OrderType:     req.OrderType,
+		Direction:     req.Direction,
+		Quantity:      req.Quantity,
+		ContractSize:  1,
+		PricePerUnit:  pricePerUnit,
+		LimitValue:    req.LimitValue,
+		StopValue:     req.StopValue,
+		AllOrNone:     req.AllOrNone,
+		Margin:        req.Margin,
+		AfterHours:    afterHours,
+		IsDone:        false,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
 	}
 
 	order.Status = s.resolveOrderStatus(ctx, authCtx, &order)
@@ -228,6 +235,33 @@ func (s *OrderService) resolveOrderStatus(ctx context.Context, authCtx *auth.Aut
 	}
 
 	return model.OrderStatusApproved
+}
+
+func (s *OrderService) validateAccount(ctx context.Context, accountNumber string, authCtx *auth.AuthContext) error {
+	account, err := s.bankingClient.GetAccountByNumber(ctx, &pb.GetAccountByNumberRequest{
+		AccountNumber: accountNumber,
+	})
+
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return errors.NotFoundErr("account not found")
+		}
+
+		return errors.ServiceUnavailableErr(err)
+	}
+
+	if authCtx.IdentityType == auth.IdentityClient {
+		if authCtx.ClientID == nil || uint64(*authCtx.ClientID) != account.ClientId {
+			return errors.ForbiddenErr("account does not belong to you")
+		}
+	} else if authCtx.IdentityType == auth.IdentityEmployee {
+		if account.AccountType != "Bank" {
+			return errors.BadRequestErr("employees must use a bank account")
+		}
+	}
+
+	return nil
 }
 
 func (s *OrderService) checkSupervisor(ctx context.Context) (bool, error) {

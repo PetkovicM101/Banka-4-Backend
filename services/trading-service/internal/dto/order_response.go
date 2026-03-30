@@ -9,7 +9,7 @@ import (
 type OrderResponse struct {
 	OrderID           uint                 `json:"orderId"`
 	UserID            uint                 `json:"userId"`
-	AccountID         uint                 `json:"accountId"`
+	AccountNumber     string               `json:"accountNumber"`
 	ListingID         uint                 `json:"listingId"`
 	Ticker            string               `json:"ticker"`
 	ListingName       string               `json:"listingName"`
@@ -35,7 +35,7 @@ func ToOrderResponse(o model.Order) OrderResponse {
 	return OrderResponse{
 		OrderID:           o.OrderID,
 		UserID:            o.UserID,
-		AccountID:         o.AccountID,
+		AccountNumber:     o.AccountNumber,
 		ListingID:         o.ListingID,
 		Ticker:            o.Listing.Ticker,
 		ListingName:       o.Listing.Name,
