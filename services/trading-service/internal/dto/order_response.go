@@ -7,28 +7,28 @@ import (
 )
 
 type OrderResponse struct {
-	OrderID           uint                 `json:"orderId"`
-	UserID            uint                 `json:"userId"`
-	AccountNumber     string               `json:"accountNumber"`
-	ListingID         uint                 `json:"listingId"`
+	OrderID           uint                 `json:"order_id"`
+	UserID            uint                 `json:"user_id"`
+	AccountNumber     string               `json:"account_number"`
+	ListingID         uint                 `json:"listing_id"`
 	Ticker            string               `json:"ticker"`
-	ListingName       string               `json:"listingName"`
-	OrderType         model.OrderType      `json:"orderType"`
+	ListingName       string               `json:"listing_name"`
+	OrderType         model.OrderType      `json:"order_type"`
 	Direction         model.OrderDirection `json:"direction"`
 	Quantity          uint                 `json:"quantity"`
-	ContractSize      float64              `json:"contractSize"`
-	PricePerUnit      *float64             `json:"pricePerUnit"`
-	LimitValue        *float64             `json:"limitValue,omitempty"`
-	StopValue         *float64             `json:"stopValue,omitempty"`
-	AllOrNone         bool                 `json:"allOrNone"`
+	ContractSize      float64              `json:"contract_size"`
+	PricePerUnit      *float64             `json:"price_per_unit"`
+	LimitValue        *float64             `json:"limit_value,omitempty"`
+	StopValue         *float64             `json:"stop_value,omitempty"`
+	AllOrNone         bool                 `json:"all_or_none"`
 	Margin            bool                 `json:"margin"`
 	Status            model.OrderStatus    `json:"status"`
-	ApprovedBy        *uint                `json:"approvedBy,omitempty"`
-	IsDone            bool                 `json:"isDone"`
-	AfterHours        bool                 `json:"afterHours"`
-	RemainingPortions uint                 `json:"remainingPortions"`
-	CreatedAt         time.Time            `json:"createdAt"`
-	UpdatedAt         time.Time            `json:"updatedAt"`
+	ApprovedBy        *uint                `json:"approved_by,omitempty"`
+	IsDone            bool                 `json:"is_done"`
+	AfterHours        bool                 `json:"after_hours"`
+	RemainingPortions uint                 `json:"remaining_portions"`
+	CreatedAt         time.Time            `json:"created_at"`
+	UpdatedAt         time.Time            `json:"updated_at"`
 }
 
 func ToOrderResponse(o model.Order) OrderResponse {
