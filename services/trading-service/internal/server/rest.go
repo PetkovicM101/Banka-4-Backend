@@ -74,7 +74,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, exchangeHa
 
 		client := api.Group("/client")
 		client.Use(authMw, auth.RequireClientSelf("clientId", true))
-		client.GET("/assets", portfolioHandler.GetClientPortfolio)
+		client.GET("/:clientId/assets", portfolioHandler.GetClientPortfolio)
 
 		actuary := api.Group("/actuary")
 		actuary.Use(authMw, auth.RequireIdentityType(auth.IdentityEmployee))
