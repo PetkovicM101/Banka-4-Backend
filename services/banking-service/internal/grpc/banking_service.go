@@ -2,12 +2,14 @@ package grpc
 
 import (
 	"context"
+	stderrors "errors"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	apperrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/banking-service/internal/model"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/banking-service/internal/repository"
@@ -16,23 +18,23 @@ import (
 
 type BankingService struct {
 	pb.UnimplementedBankingServiceServer
-	accountRepo     repository.AccountRepository
-	transactionRepo repository.TransactionRepository
-	txManager       repository.TransactionManager
-	exchangeService service.CurrencyConverter
+	accountRepo          repository.AccountRepository
+	transactionRepo      repository.TransactionRepository
+	transactionProcessor *service.TransactionProcessor
+	exchangeService      service.CurrencyConverter
 }
 
 func NewBankingService(
 	accountRepo repository.AccountRepository,
 	transactionRepo repository.TransactionRepository,
-	txManager repository.TransactionManager,
+	transactionProcessor *service.TransactionProcessor,
 	exchangeService service.CurrencyConverter,
 ) *BankingService {
 	return &BankingService{
-		accountRepo:     accountRepo,
-		transactionRepo: transactionRepo,
-		txManager:       txManager,
-		exchangeService: exchangeService,
+		accountRepo:          accountRepo,
+		transactionRepo:      transactionRepo,
+		transactionProcessor: transactionProcessor,
+		exchangeService:      exchangeService,
 	}
 }
 
@@ -82,80 +84,62 @@ func (s *BankingService) ExecuteTradeSettlement(ctx context.Context, req *struct
 		return nil, status.Error(codes.InvalidArgument, "amount must be greater than zero")
 	}
 
-	var result *structpb.Struct
-	err = s.txManager.WithinTransaction(ctx, func(txCtx context.Context) error {
-		sourceAccount, err := s.accountRepo.FindByAccountNumber(txCtx, sourceAccountNumber)
+	sourceAccount, err := s.accountRepo.FindByAccountNumber(ctx, sourceAccountNumber)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch source account: %v", err)
+	}
+	if sourceAccount == nil {
+		return nil, status.Errorf(codes.NotFound, "source account %s not found", sourceAccountNumber)
+	}
+
+	destinationAccount, err := s.accountRepo.FindByAccountNumber(ctx, destinationAccountNumber)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch destination account: %v", err)
+	}
+	if destinationAccount == nil {
+		return nil, status.Errorf(codes.NotFound, "destination account %s not found", destinationAccountNumber)
+	}
+
+	sourceAmount := amount
+	destinationAmount := amount
+	if sourceAccount.Currency.Code != destinationAccount.Currency.Code {
+		if amountIsSource {
+			destinationAmount, err = s.exchangeService.Convert(ctx, amount, sourceAccount.Currency.Code, destinationAccount.Currency.Code)
+		} else {
+			sourceAmount, err = s.exchangeService.Convert(ctx, amount, destinationAccount.Currency.Code, sourceAccount.Currency.Code)
+		}
 		if err != nil {
-			return status.Errorf(codes.Internal, "failed to fetch source account: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to convert currencies: %v", err)
 		}
-		if sourceAccount == nil {
-			return status.Errorf(codes.NotFound, "source account %s not found", sourceAccountNumber)
-		}
+	}
 
-		destinationAccount, err := s.accountRepo.FindByAccountNumber(txCtx, destinationAccountNumber)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to fetch destination account: %v", err)
-		}
-		if destinationAccount == nil {
-			return status.Errorf(codes.NotFound, "destination account %s not found", destinationAccountNumber)
-		}
+	transaction := &model.Transaction{
+		PayerAccountNumber:     sourceAccount.AccountNumber,
+		RecipientAccountNumber: destinationAccount.AccountNumber,
+		StartAmount:            sourceAmount,
+		StartCurrencyCode:      sourceAccount.Currency.Code,
+		EndAmount:              destinationAmount,
+		EndCurrencyCode:        destinationAccount.Currency.Code,
+		Status:                 model.TransactionProcessing,
+	}
 
-		sourceAmount := amount
-		destinationAmount := amount
-		if sourceAccount.Currency.Code != destinationAccount.Currency.Code {
-			if amountIsSource {
-				destinationAmount, err = s.exchangeService.Convert(txCtx, amount, sourceAccount.Currency.Code, destinationAccount.Currency.Code)
-			} else {
-				sourceAmount, err = s.exchangeService.Convert(txCtx, amount, destinationAccount.Currency.Code, sourceAccount.Currency.Code)
-			}
-			if err != nil {
-				return status.Errorf(codes.Internal, "failed to convert currencies: %v", err)
-			}
-		}
+	if err := s.transactionRepo.Create(ctx, transaction); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create transaction: %v", err)
+	}
 
-		if sourceAccount.AvailableBalance < sourceAmount {
-			return status.Error(codes.FailedPrecondition, "insufficient funds")
-		}
+	if err := s.transactionProcessor.ProcessTradeSettlement(ctx, transaction.TransactionID); err != nil {
+		return nil, mapTradeSettlementError(err)
+	}
 
-		model.UpdateBalances(sourceAccount, -sourceAmount)
-		model.UpdateBalances(destinationAccount, destinationAmount)
-
-		if err := s.accountRepo.UpdateBalance(txCtx, sourceAccount); err != nil {
-			return status.Errorf(codes.Internal, "failed to update source balance: %v", err)
-		}
-		if err := s.accountRepo.UpdateBalance(txCtx, destinationAccount); err != nil {
-			return status.Errorf(codes.Internal, "failed to update destination balance: %v", err)
-		}
-
-		transaction := &model.Transaction{
-			PayerAccountNumber:     sourceAccount.AccountNumber,
-			RecipientAccountNumber: destinationAccount.AccountNumber,
-			StartAmount:            sourceAmount,
-			StartCurrencyCode:      sourceAccount.Currency.Code,
-			EndAmount:              destinationAmount,
-			EndCurrencyCode:        destinationAccount.Currency.Code,
-			Status:                 model.TransactionCompleted,
-		}
-
-		if err := s.transactionRepo.Create(txCtx, transaction); err != nil {
-			return status.Errorf(codes.Internal, "failed to create transaction: %v", err)
-		}
-
-		result, err = structpb.NewStruct(map[string]any{
-			"transaction_id":            float64(transaction.TransactionID),
-			"source_amount":             sourceAmount,
-			"source_currency_code":      string(sourceAccount.Currency.Code),
-			"destination_amount":        destinationAmount,
-			"destination_currency_code": string(destinationAccount.Currency.Code),
-		})
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to build response: %v", err)
-		}
-
-		return nil
+	result, err := structpb.NewStruct(map[string]any{
+		"transaction_id":            float64(transaction.TransactionID),
+		"source_amount":             sourceAmount,
+		"source_currency_code":      string(sourceAccount.Currency.Code),
+		"destination_amount":        destinationAmount,
+		"destination_currency_code": string(destinationAccount.Currency.Code),
 	})
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to build response: %v", err)
 	}
 
 	return result, nil
@@ -201,4 +185,20 @@ func getBoolField(fields map[string]*structpb.Value, name string) (bool, error) 
 	default:
 		return false, fmt.Errorf("%s must be a boolean", name)
 	}
+}
+
+func mapTradeSettlementError(err error) error {
+	var appErr *apperrors.AppError
+	if stderrors.As(err, &appErr) {
+		switch appErr.Code {
+		case 400:
+			return status.Error(codes.FailedPrecondition, appErr.Message)
+		case 404:
+			return status.Error(codes.NotFound, appErr.Message)
+		default:
+			return status.Error(codes.Internal, appErr.Message)
+		}
+	}
+
+	return status.Error(codes.Internal, err.Error())
 }
