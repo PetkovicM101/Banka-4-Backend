@@ -45,6 +45,13 @@ func main() {
 			func(conn *grpc.ClientConn) pb.PermissionServiceClient {
 				return pb.NewPermissionServiceClient(conn)
 			},
+			func(conn *grpc.ClientConn) pb.UserServiceClient {
+				return pb.NewUserServiceClient(conn)
+			},
+			client.NewBankingServiceConnection,
+			func(conn *client.BankingConn) pb.BankingServiceClient {
+				return pb.NewBankingServiceClient(conn.ClientConn)
+			},
 			func(c pb.PermissionServiceClient) auth.PermissionProvider {
 				return permission.NewGrpcPermissionProvider(c)
 			},
@@ -68,6 +75,13 @@ func main() {
 			repository.NewFuturesRepository,
 			service.NewListingService,
 			handler.NewListingHandler,
+			repository.NewOrderOwnershipRepository,
+			repository.NewFuturesContractRepository,
+			service.NewPortfolioService,
+			handler.NewPortfolioHandler,
+			repository.NewOrderRepository,
+			service.NewOrderService,
+			handler.NewOrderHandler,
 		),
 		fx.Invoke(func(cfg *config.Configuration) error {
 			return logging.Init(cfg.Env)
@@ -80,6 +94,7 @@ func main() {
 				&model.ListingDailyPriceInfo{},
 				&model.Exchange{},
 				&model.Order{},
+				&model.OrderOwnership{},
 				&model.ForexPair{},
 				&model.FuturesContract{},
 			)

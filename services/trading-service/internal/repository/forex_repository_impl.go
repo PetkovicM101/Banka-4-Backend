@@ -63,3 +63,11 @@ func (r *forexRepository) FindAll(ctx context.Context, filter ListingFilter) ([]
 
 	return pairs, count, err
 }
+
+func (r *forexRepository) FindByListingIDs(ctx context.Context, listingIDs []uint) ([]model.ForexPair, error) {
+	var pairs []model.ForexPair
+	if err := r.db.WithContext(ctx).Where("listing_id IN ?", listingIDs).Preload("Listing").Find(&pairs).Error; err != nil {
+		return nil, err
+	}
+	return pairs, nil
+}
