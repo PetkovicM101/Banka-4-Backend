@@ -4,8 +4,11 @@ package banking.v1;
 
 option go_package = "common/pkg/pb;pb";
 
+import "google/protobuf/struct.proto";
+
 service BankingService {
   rpc GetAccountByNumber(GetAccountByNumberRequest) returns (GetAccountByNumberResponse);
+  rpc ExecuteTradeSettlement(google.protobuf.Struct) returns (google.protobuf.Struct);
 }
 
 message GetAccountByNumberRequest {
