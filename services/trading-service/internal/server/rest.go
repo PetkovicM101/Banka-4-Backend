@@ -19,7 +19,6 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/fx"
 
-	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/logging"
 	_ "github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/docs"
@@ -75,7 +74,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, exchangeHa
 
 		client := api.Group("/client")
 		client.Use(authMw, auth.RequireClientSelf("clientId", true))
-		client.GET("/:clientId/assets", portfolioHandler.GetClientPortfolio)
+		client.GET("/assets", portfolioHandler.GetClientPortfolio)
 
 		actuary := api.Group("/actuary")
 		actuary.Use(authMw, auth.RequireIdentityType(auth.IdentityEmployee))
