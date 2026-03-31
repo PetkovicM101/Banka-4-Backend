@@ -31,9 +31,9 @@ func (r *forexRepository) Upsert(ctx context.Context, pair model.ForexPair) erro
 		FirstOrCreate(&pair).Error
 }
 
-func (r *forexRepository) FindByListingIDs(listingIDs []uint) ([]model.ForexPair, error) {
+func (r *forexRepository) FindByListingIDs(ctx context.Context, listingIDs []uint) ([]model.ForexPair, error) {
 	var pairs []model.ForexPair
-	if err := r.db.Where("listing_id IN ?", listingIDs).Preload("Listing").Find(&pairs).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("listing_id IN ?", listingIDs).Preload("Listing").Find(&pairs).Error; err != nil {
 		return nil, err
 	}
 	return pairs, nil

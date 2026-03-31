@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"gorm.io/gorm"
 )
@@ -22,9 +23,9 @@ func (r *optionRepository) Upsert(ctx context.Context, option *model.Option) err
 		FirstOrCreate(option).Error
 }
 
-func (r *optionRepository) FindByListingIDs(listingIDs []uint) ([]model.Option, error) {
+func (r *optionRepository) FindByListingIDs(ctx context.Context, listingIDs []uint) ([]model.Option, error) {
 	var options []model.Option
-	if err := r.db.Where("listing_id IN ?", listingIDs).Preload("Listing").Find(&options).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("listing_id IN ?", listingIDs).Preload("Listing").Find(&options).Error; err != nil {
 		return nil, err
 	}
 	return options, nil

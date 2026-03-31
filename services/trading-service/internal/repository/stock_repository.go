@@ -8,6 +8,6 @@ import (
 
 type StockRepository interface {
 	Upsert(ctx context.Context, stock *model.Stock) error
-	FindByListingIDs(listingIDs []uint) ([]model.Stock, error)
+	FindByListingIDs(ctx context.Context, listingIDs []uint) ([]model.Stock, error)
 	FindAll(ctx context.Context) ([]model.Stock, error)
 }

@@ -22,9 +22,9 @@ func (r *stockRepository) Upsert(ctx context.Context, stock *model.Stock) error 
 		FirstOrCreate(stock).Error
 }
 
-func (r *stockRepository) FindByListingIDs(listingIDs []uint) ([]model.Stock, error) {
+func (r *stockRepository) FindByListingIDs(ctx context.Context, listingIDs []uint) ([]model.Stock, error) {
 	var stocks []model.Stock
-	if err := r.db.Where("listing_id IN ?", listingIDs).Preload("Listing").Find(&stocks).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("listing_id IN ?", listingIDs).Preload("Listing").Find(&stocks).Error; err != nil {
 		return nil, err
 	}
 	return stocks, nil
