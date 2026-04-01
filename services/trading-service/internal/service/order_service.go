@@ -11,7 +11,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
@@ -27,17 +26,6 @@ const (
 	executionRetryInterval     = 30 * time.Second
 	maxOrdersPerTick           = 25
 )
-
-var bankAccountsByCurrency = map[string]string{
-	"RSD": "444000000000000000",
-	"EUR": "444000000000000001",
-	"USD": "444000000000000002",
-	"CHF": "444000000000000003",
-	"GBP": "444000000000000004",
-	"JPY": "444000000000000005",
-	"CAD": "444000000000000006",
-	"AUD": "444000000000000007",
-}
 
 type exchangeSession struct {
 	IsOpen    bool
@@ -184,6 +172,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req dto.CreateOrderReque
 		AfterHours:        !session.IsOpen,
 		Triggered:         req.OrderType == model.OrderTypeMarket || req.OrderType == model.OrderTypeLimit,
 		CommissionCharged: false,
+		CommissionExempt:  authCtx.IdentityType == auth.IdentityEmployee,
 		IsDone:            false,
 		CreatedAt:         s.now(),
 		UpdatedAt:         s.now(),
@@ -384,7 +373,7 @@ func (s *OrderService) processOrder(ctx context.Context, order *model.Order) err
 	grossAmount := float64(fillQty) * order.ContractSize * pricePerUnit
 	commission := 0.0
 	settlementAmount := grossAmount
-	if !order.CommissionCharged {
+	if !order.CommissionCharged && !order.CommissionExempt {
 		commission = calculateCommission(order.OrderType, approximateOrderValue(order, pricePerUnit))
 		if order.Direction == model.OrderDirectionBuy {
 			settlementAmount += commission
@@ -435,7 +424,7 @@ func (s *OrderService) processOrder(ctx context.Context, order *model.Order) err
 		order.IsDone = true
 		order.NextExecutionAt = nil
 	} else {
-		nextExecutionAt := s.nextExecutionAt(order)
+		nextExecutionAt := s.nextExecutionAt(ctx, order)
 		order.NextExecutionAt = &nextExecutionAt
 	}
 
@@ -533,18 +522,34 @@ func (s *OrderService) resolveExchangeSession(exchange *model.Exchange) exchange
 
 	openToday := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), openTime.Hour(), openTime.Minute(), 0, 0, localNow.Location())
 	closeToday := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), closeTime.Hour(), closeTime.Minute(), 0, 0, localNow.Location())
-	nextOpen := openToday
+	nextOpen := nextTradingOpen(openToday)
+
+	if isWeekend(localNow) {
+		return exchangeSession{IsOpen: false, NextOpen: nextOpen, LocalNow: localNow, CloseTime: closeToday}
+	}
 
 	switch {
 	case localNow.Before(openToday):
-		nextOpen = openToday
+		nextOpen = nextTradingOpen(openToday)
 		return exchangeSession{IsOpen: false, NextOpen: nextOpen, LocalNow: localNow, CloseTime: closeToday}
 	case localNow.Before(closeToday):
 		return exchangeSession{IsOpen: true, LocalNow: localNow, CloseTime: closeToday}
 	default:
-		nextOpen = openToday.Add(24 * time.Hour)
+		nextOpen = nextTradingOpen(openToday.Add(24 * time.Hour))
 		return exchangeSession{IsOpen: false, NextOpen: nextOpen, LocalNow: localNow, CloseTime: closeToday}
 	}
+}
+
+func nextTradingOpen(candidate time.Time) time.Time {
+	for isWeekend(candidate) {
+		candidate = candidate.Add(24 * time.Hour)
+	}
+
+	return candidate
+}
+
+func isWeekend(t time.Time) bool {
+	return t.Weekday() == time.Saturday || t.Weekday() == time.Sunday
 }
 
 func (s *OrderService) initialExecutionTime(session exchangeSession) time.Time {
@@ -555,16 +560,25 @@ func (s *OrderService) initialExecutionTime(session exchangeSession) time.Time {
 	return session.NextOpen
 }
 
-func (s *OrderService) nextExecutionAt(order *model.Order) time.Time {
+func (s *OrderService) nextExecutionAt(ctx context.Context, order *model.Order) time.Time {
 	remaining := order.RemainingPortions()
 	if remaining == 0 {
 		return s.now()
 	}
 
-	volume := math.Max(float64(remaining), 10)
+	volume := math.Max(float64(s.resolveDailyVolume(ctx, order.ListingID)), 10)
 	maxSeconds := math.Max(1, float64(24*60)/(volume/float64(remaining)))
 	waitSeconds := s.rng.Float64() * maxSeconds
 	return s.now().Add(time.Duration(waitSeconds * float64(time.Second)))
+}
+
+func (s *OrderService) resolveDailyVolume(ctx context.Context, listingID uint) uint {
+	dailyInfo, err := s.listingRepo.FindLatestDailyPriceInfo(ctx, listingID)
+	if err != nil || dailyInfo == nil || dailyInfo.Volume == 0 {
+		return 0
+	}
+
+	return dailyInfo.Volume
 }
 
 func (s *OrderService) resolveFillQuantity(order *model.Order) uint {
@@ -583,42 +597,26 @@ func (s *OrderService) resolveFillQuantity(order *model.Order) uint {
 }
 
 func (s *OrderService) executeTradeSettlement(ctx context.Context, order *model.Order, tradeCurrency string, amount float64) (*tradeSettlement, error) {
-	bankAccount, ok := bankAccountsByCurrency[tradeCurrency]
-	if !ok {
-		return nil, status.Error(codes.InvalidArgument, "unsupported trade currency")
-	}
-
-	sourceAccount := order.AccountNumber
-	destinationAccount := bankAccount
-	amountIsSource := false
-
+	direction := pb.TradeSettlementDirection_TRADE_SETTLEMENT_DIRECTION_BUY
 	if order.Direction == model.OrderDirectionSell {
-		sourceAccount = bankAccount
-		destinationAccount = order.AccountNumber
-		amountIsSource = true
+		direction = pb.TradeSettlementDirection_TRADE_SETTLEMENT_DIRECTION_SELL
 	}
 
-	req, err := structpb.NewStruct(map[string]any{
-		"source_account_number":      sourceAccount,
-		"destination_account_number": destinationAccount,
-		"amount":                     amount,
-		"amount_is_source":           amountIsSource,
+	resp, err := s.bankingClient.ExecuteTradeSettlement(ctx, &pb.ExecuteTradeSettlementRequest{
+		AccountNumber:     order.AccountNumber,
+		TradeCurrencyCode: tradeCurrency,
+		Direction:         direction,
+		Amount:            amount,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := s.bankingClient.ExecuteTradeSettlement(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-
-	fields := resp.GetFields()
 	return &tradeSettlement{
-		SourceAmount:        fields["source_amount"].GetNumberValue(),
-		SourceCurrency:      fields["source_currency_code"].GetStringValue(),
-		DestinationAmount:   fields["destination_amount"].GetNumberValue(),
-		DestinationCurrency: fields["destination_currency_code"].GetStringValue(),
+		SourceAmount:        resp.GetSourceAmount(),
+		SourceCurrency:      resp.GetSourceCurrencyCode(),
+		DestinationAmount:   resp.GetDestinationAmount(),
+		DestinationCurrency: resp.GetDestinationCurrencyCode(),
 	}, nil
 }
 

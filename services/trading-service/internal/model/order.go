@@ -47,6 +47,7 @@ type Order struct {
 	Triggered         bool `gorm:"not null;default:false"`
 	NextExecutionAt   *time.Time
 	CommissionCharged bool `gorm:"not null;default:false"`
+	CommissionExempt  bool `gorm:"not null;default:false"`
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }

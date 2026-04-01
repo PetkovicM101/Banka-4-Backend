@@ -4,10 +4,10 @@ import (
 	"context"
 	stderrors "errors"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/structpb"
 
 	apperrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
@@ -57,47 +57,61 @@ func (s *BankingService) GetAccountByNumber(ctx context.Context, req *pb.GetAcco
 	}, nil
 }
 
-func (s *BankingService) ExecuteTradeSettlement(ctx context.Context, req *structpb.Struct) (*structpb.Struct, error) {
-	fields := req.GetFields()
-
-	sourceAccountNumber, err := getStringField(fields, "source_account_number")
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+func (s *BankingService) ExecuteTradeSettlement(ctx context.Context, req *pb.ExecuteTradeSettlementRequest) (*pb.ExecuteTradeSettlementResponse, error) {
+	accountNumber := strings.TrimSpace(req.GetAccountNumber())
+	if accountNumber == "" {
+		return nil, status.Error(codes.InvalidArgument, "account_number is required")
 	}
 
-	destinationAccountNumber, err := getStringField(fields, "destination_account_number")
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	tradeCurrencyCode := strings.ToUpper(strings.TrimSpace(req.GetTradeCurrencyCode()))
+	if tradeCurrencyCode == "" {
+		return nil, status.Error(codes.InvalidArgument, "trade_currency_code is required")
 	}
 
-	amount, err := getNumberField(fields, "amount")
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+	direction := req.GetDirection()
+	if direction == pb.TradeSettlementDirection_TRADE_SETTLEMENT_DIRECTION_UNSPECIFIED {
+		return nil, status.Error(codes.InvalidArgument, "direction is required")
 	}
 
-	amountIsSource, err := getBoolField(fields, "amount_is_source")
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+	amount := req.GetAmount()
 
 	if amount <= 0 {
 		return nil, status.Error(codes.InvalidArgument, "amount must be greater than zero")
 	}
 
-	sourceAccount, err := s.accountRepo.FindByAccountNumber(ctx, sourceAccountNumber)
+	customerAccount, err := s.accountRepo.FindByAccountNumber(ctx, accountNumber)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to fetch source account: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to fetch account: %v", err)
 	}
-	if sourceAccount == nil {
-		return nil, status.Errorf(codes.NotFound, "source account %s not found", sourceAccountNumber)
+	if customerAccount == nil {
+		return nil, status.Errorf(codes.NotFound, "account %s not found", accountNumber)
 	}
 
-	destinationAccount, err := s.accountRepo.FindByAccountNumber(ctx, destinationAccountNumber)
+	bankAccountNumber, err := resolveBankAccountNumber(tradeCurrencyCode)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to fetch destination account: %v", err)
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	if destinationAccount == nil {
-		return nil, status.Errorf(codes.NotFound, "destination account %s not found", destinationAccountNumber)
+
+	bankAccount, err := s.accountRepo.FindByAccountNumber(ctx, bankAccountNumber)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch bank settlement account: %v", err)
+	}
+	if bankAccount == nil {
+		return nil, status.Errorf(codes.NotFound, "bank settlement account %s not found", bankAccountNumber)
+	}
+
+	sourceAccount := customerAccount
+	destinationAccount := bankAccount
+	amountIsSource := false
+
+	switch direction {
+	case pb.TradeSettlementDirection_TRADE_SETTLEMENT_DIRECTION_BUY:
+	case pb.TradeSettlementDirection_TRADE_SETTLEMENT_DIRECTION_SELL:
+		sourceAccount = bankAccount
+		destinationAccount = customerAccount
+		amountIsSource = true
+	default:
+		return nil, status.Error(codes.InvalidArgument, "direction must be BUY or SELL")
 	}
 
 	sourceAmount := amount
@@ -131,60 +145,22 @@ func (s *BankingService) ExecuteTradeSettlement(ctx context.Context, req *struct
 		return nil, mapTradeSettlementError(err)
 	}
 
-	result, err := structpb.NewStruct(map[string]any{
-		"transaction_id":            float64(transaction.TransactionID),
-		"source_amount":             sourceAmount,
-		"source_currency_code":      string(sourceAccount.Currency.Code),
-		"destination_amount":        destinationAmount,
-		"destination_currency_code": string(destinationAccount.Currency.Code),
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to build response: %v", err)
-	}
-
-	return result, nil
+	return &pb.ExecuteTradeSettlementResponse{
+		TransactionId:           uint64(transaction.TransactionID),
+		SourceAmount:            sourceAmount,
+		SourceCurrencyCode:      string(sourceAccount.Currency.Code),
+		DestinationAmount:       destinationAmount,
+		DestinationCurrencyCode: string(destinationAccount.Currency.Code),
+	}, nil
 }
 
-func getStringField(fields map[string]*structpb.Value, name string) (string, error) {
-	value, ok := fields[name]
+func resolveBankAccountNumber(currencyCode string) (string, error) {
+	accountNumber, ok := service.BankAccounts[model.CurrencyCode(currencyCode)]
 	if !ok {
-		return "", fmt.Errorf("%s is required", name)
+		return "", fmt.Errorf("unsupported trade currency: %s", currencyCode)
 	}
 
-	stringValue := value.GetStringValue()
-	if stringValue == "" {
-		return "", fmt.Errorf("%s must be a non-empty string", name)
-	}
-
-	return stringValue, nil
-}
-
-func getNumberField(fields map[string]*structpb.Value, name string) (float64, error) {
-	value, ok := fields[name]
-	if !ok {
-		return 0, fmt.Errorf("%s is required", name)
-	}
-
-	switch kind := value.Kind.(type) {
-	case *structpb.Value_NumberValue:
-		return kind.NumberValue, nil
-	default:
-		return 0, fmt.Errorf("%s must be a number", name)
-	}
-}
-
-func getBoolField(fields map[string]*structpb.Value, name string) (bool, error) {
-	value, ok := fields[name]
-	if !ok {
-		return false, fmt.Errorf("%s is required", name)
-	}
-
-	switch kind := value.Kind.(type) {
-	case *structpb.Value_BoolValue:
-		return kind.BoolValue, nil
-	default:
-		return false, fmt.Errorf("%s must be a boolean", name)
-	}
+	return accountNumber, nil
 }
 
 func mapTradeSettlementError(err error) error {
