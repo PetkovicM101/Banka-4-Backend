@@ -43,13 +43,6 @@ type ForexResponse struct {
 	InitialMarginCost float64 `json:"initialMarginCost"`
 }
 
-type PaginatedResponse[T any] struct {
-	Data     []T   `json:"data"`
-	Total    int64 `json:"total"`
-	Page     int   `json:"page"`
-	PageSize int   `json:"pageSize"`
-}
-
 type OptionResponse struct {
 	BaseListingResponse
 	Strike            float64   `json:"strike"`
@@ -58,6 +51,33 @@ type OptionResponse struct {
 	ImpliedVolatility float64   `json:"implied_volatility"`
 	OpenInterest      int       `json:"open_interest"`
 }
+
+type PaginatedStockResponse struct {
+	Data     []StockResponse `json:"data"`
+	Total    int64           `json:"total"`
+	Page     int             `json:"page"`
+	PageSize int             `json:"pageSize"`
+}
+
+type PaginatedForexResponse struct {
+	Data     []ForexResponse `json:"data"`
+	Total    int64           `json:"total"`
+	Page     int             `json:"page"`
+	PageSize int             `json:"pageSize"`
+}
+type PaginatedFuturesResponse struct {
+	Data     []FuturesResponse `json:"data"`
+	Total    int64             `json:"total"`
+	Page     int               `json:"page"`
+	PageSize int               `json:"pageSize"`
+}
+type PaginatedOptionResponse struct {
+	Data     []OptionResponse `json:"data"`
+	Total    int64            `json:"total"`
+	Page     int              `json:"page"`
+	PageSize int              `json:"pageSize"`
+}
+
 
 type DailyPriceResponse struct {
 	Date   time.Time `json:"date"`

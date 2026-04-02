@@ -37,7 +37,8 @@ func NewListingHandler(svc *service.ListingService) *ListingHandler {
 // @Param sort_dir query string false "asc|desc"
 // @Param page query integer false "Page"
 // @Param page_size query integer false "Page size"
-// @Success 200 {object} dto.PaginatedResponse[dto.StockResponse]
+// @Success 200 {object} dto.PaginatedStockResponse
+// @Failure 400 {object} errors.AppError
 // @Router /api/listings/stocks [get]
 func (h *ListingHandler) GetStocks(c *gin.Context) {
 	var q dto.ListingQuery
@@ -55,26 +56,19 @@ func (h *ListingHandler) GetStocks(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
-// GetStocks godoc
-// @Summary List stocks
+// GetStockDetails godoc
+// @Summary Get stock details
+// @Description Retrieves stock information for a specific listing by its ID.
 // @Tags listings
+// @Accept json
 // @Produce json
-// @Param search query string false "Search by ticker or name"
-// @Param exchange query string false "Exchange MIC prefix"
-// @Param price_min query number false "Min price"
-// @Param price_max query number false "Max price"
-// @Param ask_min query number false "Min ask"
-// @Param ask_max query number false "Max ask"
-// @Param bid_min query number false "Min bid"
-// @Param bid_max query number false "Max bid"
-// @Param volume_min query integer false "Min volume"
-// @Param volume_max query integer false "Max volume"
-// @Param sort_by query string false "price|volume|maintenance_margin"
-// @Param sort_dir query string false "asc|desc"
-// @Param page query integer false "Page"
-// @Param page_size query integer false "Page size"
-// @Success 200 {object} dto.PaginatedResponse[dto.StockResponse]
-// @Router /api/listings/stocks [get]
+// @Param listingId path int true "Listing ID"
+// @Success 200 {object} dto.StockDetailedResponse
+// @Failure 400 {object} errors.AppError
+// @Failure 404 {object} errors.AppError
+// @Failure 500 {object} errors.AppError
+// @Security BearerAuth
+// @Router /api/listings/stock/listingId [get]
 func (h *ListingHandler) GetStockDetails(c *gin.Context) {
 	listingId, err := strconv.ParseUint(c.Param("listingId"), 10, 64)
 	if err != nil {
@@ -109,7 +103,8 @@ func (h *ListingHandler) GetStockDetails(c *gin.Context) {
 // @Param sort_dir query string false "asc|desc"
 // @Param page query integer false "Page"
 // @Param page_size query integer false "Page size"
-// @Success 200 {object} dto.PaginatedResponse[dto.FuturesResponse]
+// @Success 200 {object} dto.PaginatedFuturesResponse
+// @Failure 400 {object} errors.AppError
 // @Router /api/listings/futures [get]
 func (h *ListingHandler) GetFutures(c *gin.Context) {
 	var q dto.ListingQuery
@@ -137,7 +132,8 @@ func (h *ListingHandler) GetFutures(c *gin.Context) {
 // @Param sort_dir query string false "asc|desc"
 // @Param page query integer false "Page"
 // @Param page_size query integer false "Page size"
-// @Success 200 {object} dto.PaginatedResponse[dto.ForexResponse]
+// @Success 200 {object} dto.PaginatedForexResponse
+// @Failure 400 {object} errors.AppError
 // @Router /api/listings/forex [get]
 func (h *ListingHandler) GetForex(c *gin.Context) {
 	var q dto.ListingQuery
@@ -174,7 +170,8 @@ func (h *ListingHandler) GetForex(c *gin.Context) {
 // @Param sort_dir query string false "asc|desc"
 // @Param page query integer false "Page"
 // @Param page_size query integer false "Page size"
-// @Success 200 {object} dto.PaginatedResponse[dto.OptionResponse]
+// @Success 200 {object} dto.PaginatedOptionResponse
+// @Failure 400 {object} errors.AppError
 // @Router /api/listings/options [get]
 func (h *ListingHandler) GetOptions(c *gin.Context) {
 	var q dto.ListingQuery

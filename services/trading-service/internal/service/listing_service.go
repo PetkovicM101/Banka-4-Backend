@@ -92,7 +92,7 @@ func toFilter(q dto.ListingQuery) (repository.ListingFilter, error) {
 
 // --- Stocks ---
 
-func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.StockResponse], error) {
+func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedStockResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -118,7 +118,7 @@ func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dt
 		}
 	}
 
-	return &dto.PaginatedResponse[dto.StockResponse]{
+	return &dto.PaginatedStockResponse {
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
@@ -180,7 +180,7 @@ func (s *ListingService) GetStockDetails(ctx context.Context, listingID uint) (*
 
 // --- Futures ---
 
-func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.FuturesResponse], error) {
+func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedFuturesResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -219,7 +219,7 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*d
 		}
 	}
 
-	return &dto.PaginatedResponse[dto.FuturesResponse]{
+	return &dto.PaginatedFuturesResponse{
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
@@ -229,7 +229,7 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*d
 
 // --- Forex ---
 
-func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.ForexResponse], error) {
+func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedForexResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -251,7 +251,7 @@ func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto
 		}
 	}
 
-	return &dto.PaginatedResponse[dto.ForexResponse]{
+	return &dto.PaginatedForexResponse {
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
@@ -259,7 +259,7 @@ func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto
 	}, nil
 }
 
-func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.OptionResponse], error) {
+func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedOptionResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -300,7 +300,7 @@ func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*d
 		}
 	}
 
-	result := &dto.PaginatedResponse[dto.OptionResponse]{
+	result := &dto.PaginatedOptionResponse {
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
