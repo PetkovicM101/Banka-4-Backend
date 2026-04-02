@@ -33,6 +33,7 @@ var employees = []struct {
 	{"Dimitrije", "Mijailovic", "M", "1985-05-01", "dimitrije@raf.rs", "123456789", "Street 1", "dimitrije", "pass123", true, "IT", "Developer"},
 	{"Petar", "Petrovic", "M", "1990-08-12", "petar@raf.rs", "987654321", "Street 2", "petar", "pass123", true, "HR", "HR"},
 	{"Admin", "Admin", "M", "1980-01-01", "admin@raf.rs", "000000000", "RAF", "admin", "admin123", true, "IT", "Manager"},
+	{"Admin", "Novi", "M", "1980-01-01", "adminnovi@raf.rs", "000000001", "RAF", "adminnovi", "admin123", true, "IT", "Manager"},
 }
 
 var activatableClients = []struct {
@@ -60,6 +61,7 @@ var clients = []struct {
 	Address     string
 	Password    string
 }{
+	{"Banka", "Četiri", "M", "1992-03-15", "banka4@raf.rs", "banka4", "+381600000000", "Bankarska ulica 1, Beograd", "Banka123"},
 	{"Marko", "Markovic", "M", "1992-03-15", "marko.markovic@example.com", "marko.markovic", "+381601234567", "Knez Mihailova 10, Beograd", "password123"},
 	{"Ana", "Anic", "F", "1995-07-22", "ana.anic@example.com", "ana.anic", "+381609876543", "Bulevar Oslobodjenja 20, Novi Sad", "password123"},
 	{"Stefan", "Stefanovic", "M", "1988-11-30", "stefan.stefanovic@example.com", "stefan.stefanovic", "+381611112222", "Trg Republike 5, Beograd", "password123"},
@@ -233,31 +235,38 @@ func Run(db *gorm.DB) error {
 		}
 	}
 
-	// seed admin permissions
-	var adminIdentity model.Identity
-	if err := db.Where("email = ?", "admin@raf.rs").First(&adminIdentity).Error; err != nil {
-		return err
+	adminEmails := []string{
+		"admin@raf.rs",
+		"adminnovi@raf.rs",
 	}
 
-	var admin model.Employee
-	if err := db.Where("identity_id = ?", adminIdentity.ID).First(&admin).Error; err != nil {
-		return err
-	}
+	for _, email := range adminEmails {
+		var adminIdentity model.Identity
+		if err := db.Where("email = ?", email).First(&adminIdentity).Error; err != nil {
+			return err
+		}
 
-	for _, p := range permission.All {
-		var existing model.EmployeePermission
-		err := db.Where("employee_id = ? AND permission = ?", admin.EmployeeID, string(p)).
-			First(&existing).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			perm := model.EmployeePermission{
-				EmployeeID: admin.EmployeeID,
-				Permission: p,
-			}
-			if err := db.Create(&perm).Error; err != nil {
+		var admin model.Employee
+		if err := db.Where("identity_id = ?", adminIdentity.ID).First(&admin).Error; err != nil {
+			return err
+		}
+
+		for _, p := range permission.All {
+			var existing model.EmployeePermission
+			err := db.Where("employee_id = ? AND permission = ?", admin.EmployeeID, string(p)).
+				First(&existing).Error
+
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				perm := model.EmployeePermission{
+					EmployeeID: admin.EmployeeID,
+					Permission: p,
+				}
+				if err := db.Create(&perm).Error; err != nil {
+					return err
+				}
+			} else if err != nil {
 				return err
 			}
-		} else if err != nil {
-			return err
 		}
 	}
 
