@@ -92,7 +92,7 @@ func toFilter(q dto.ListingQuery) (repository.ListingFilter, error) {
 
 // --- Stocks ---
 
-func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.StockResponse], error) {
+func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedStockResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -118,17 +118,69 @@ func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dt
 		}
 	}
 
-	return &dto.PaginatedResponse[dto.StockResponse]{
+	return &dto.PaginatedStockResponse {
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
 		PageSize: q.PageSize,
 	}, nil
 }
+func (s *ListingService) GetStockDetails(ctx context.Context, listingID uint) (*dto.StockDetailedResponse, error) {
+	l, err := s.listingRepo.FindByID(ctx, listingID)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+	if l == nil || l.ListingType != model.ListingTypeStock || l.Stock == nil {
+		return nil, commonErrors.NotFoundErr("stock not found")
+	}
+
+	daily := latestDaily(l.DailyPriceInfos)
+	stockResp := dto.StockResponse{
+		BaseListingResponse: baseResponse(*l, daily),
+		OutstandingShares:   l.Stock.OutstandingShares,
+		DividendYield:       l.Stock.DividendYield,
+	}
+
+	history := make([]dto.DailyPriceResponse, len(l.DailyPriceInfos))
+	for i, h := range l.DailyPriceInfos {
+		history[i] = dto.DailyPriceResponse{
+			Date:   h.Date,
+			Price:  h.Price,
+			Ask:    h.Ask,
+			Bid:    h.Bid,
+			Change: h.Change,
+			Volume: h.Volume,
+		}
+	}
+
+	options, err := s.optionRepo.FindByStockID(ctx, l.Stock.StockID)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+
+	optionResponses := make([]dto.OptionResponse, len(options))
+	for i, o := range options {
+
+		optionResponses[i] = dto.OptionResponse{
+			BaseListingResponse: baseResponse(o.Listing, nil),
+			Strike:              o.StrikePrice,
+			OptionType:          string(o.OptionType),
+			SettlementDate:      o.SettlementDate,
+			ImpliedVolatility:   o.ImpliedVolatility,
+			OpenInterest:        o.OpenInterest,
+		}
+	}
+
+	return &dto.StockDetailedResponse{
+		StockResponse: stockResp,
+		History:       history,
+		Options:       optionResponses,
+	}, nil
+}
 
 // --- Futures ---
 
-func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.FuturesResponse], error) {
+func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedFuturesResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -167,7 +219,7 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*d
 		}
 	}
 
-	return &dto.PaginatedResponse[dto.FuturesResponse]{
+	return &dto.PaginatedFuturesResponse{
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
@@ -177,7 +229,7 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*d
 
 // --- Forex ---
 
-func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.ForexResponse], error) {
+func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedForexResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -199,7 +251,7 @@ func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto
 		}
 	}
 
-	return &dto.PaginatedResponse[dto.ForexResponse]{
+	return &dto.PaginatedForexResponse {
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
@@ -207,7 +259,7 @@ func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto
 	}, nil
 }
 
-func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedResponse[dto.OptionResponse], error) {
+func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*dto.PaginatedOptionResponse, error) {
 	filter, err := toFilter(q)
 	if err != nil {
 		return nil, commonErrors.BadRequestErr("invalid settlement_date format")
@@ -248,7 +300,7 @@ func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*d
 		}
 	}
 
-	result := &dto.PaginatedResponse[dto.OptionResponse]{
+	result := &dto.PaginatedOptionResponse {
 		Data:     data,
 		Total:    total,
 		Page:     q.Page,
