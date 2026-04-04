@@ -269,14 +269,30 @@ func (s *StockService) seedGeneratedOption(
 ) {
 	ticker := fmt.Sprintf("%s:%s:%.2f", stockListing.Ticker, optType, strike)
 
+	// --- Black-Scholes price calculation ---
+	S := stockListing.Price
+	K := strike
+	T := time.Until(expiration).Hours() / (24.0 * 365.0) // years until expiry
+	sigma := 0.3                                         // default implied volatility (30%)
+
+	var premium float64
+	if optType == model.OptionTypeCall {
+		premium = BlackScholesCall(S, K, T, riskFreeRate, sigma)
+	} else {
+		premium = BlackScholesPut(S, K, T, riskFreeRate, sigma)
+	}
+	if premium < 0.01 {
+		premium = 0.01 // floor so the price is never zero
+	}
+	// --- end calculation ---
+
 	listing := &model.Listing{
 		Ticker:      ticker,
 		Name:        fmt.Sprintf("%s %s %.2f %s", stockListing.Ticker, optType, strike, expiration.Format("2006-01-02")),
 		ExchangeMIC: stockListing.ExchangeMIC,
 		LastRefresh: time.Now(),
-		// TODO: replace with actual price calculation from black scholes
-		Price:       strike,
-		Ask:         strike,
+		Price:       premium,
+		Ask:         premium,
 		ListingType: model.ListingTypeOption,
 	}
 	if err := s.listingRepo.Upsert(ctx, listing); err != nil {
@@ -290,7 +306,7 @@ func (s *StockService) seedGeneratedOption(
 		StrikePrice:       strike,
 		ContractSize:      100,
 		SettlementDate:    expiration,
-		ImpliedVolatility: 1.0,
+		ImpliedVolatility: sigma,
 		OpenInterest:      0,
 	}
 	if err := s.optionRepo.Upsert(ctx, option); err != nil {
