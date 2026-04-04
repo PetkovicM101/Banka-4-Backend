@@ -10,6 +10,7 @@ import (
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/repository"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/seed"
 )
 
 const (
@@ -18,26 +19,46 @@ const (
 )
 
 type StockService struct {
-	listingRepo repository.ListingRepository
-	stockRepo   repository.StockRepository
-	optionRepo  repository.OptionRepository
-	client      *client.StockClient
+	listingRepo  repository.ListingRepository
+	stockRepo    repository.StockRepository
+	optionRepo   repository.OptionRepository
+	exchangeRepo repository.ExchangeRepository
+	client       stockMarketClient
 
 	mu     sync.Mutex
 	cancel context.CancelFunc
+}
+
+type stockMarketClient interface {
+	GetSymbols(exchange string) ([]client.Symbol, error)
+	GetProfile(ticker string) (*client.Profile, error)
+	GetQuote(ticker string) (*client.Quote, error)
+	GetBasicFinancials(ticker string) (*client.BasicFinancials, error)
 }
 
 func NewStockService(
 	listingRepo repository.ListingRepository,
 	stockRepo repository.StockRepository,
 	optionRepo repository.OptionRepository,
+	exchangeRepo repository.ExchangeRepository,
 	client *client.StockClient,
 ) *StockService {
+	return newStockService(listingRepo, stockRepo, optionRepo, exchangeRepo, client)
+}
+
+func newStockService(
+	listingRepo repository.ListingRepository,
+	stockRepo repository.StockRepository,
+	optionRepo repository.OptionRepository,
+	exchangeRepo repository.ExchangeRepository,
+	client stockMarketClient,
+) *StockService {
 	return &StockService{
-		listingRepo: listingRepo,
-		stockRepo:   stockRepo,
-		optionRepo:  optionRepo,
-		client:      client,
+		listingRepo:  listingRepo,
+		stockRepo:    stockRepo,
+		optionRepo:   optionRepo,
+		exchangeRepo: exchangeRepo,
+		client:       client,
 	}
 }
 
@@ -124,6 +145,16 @@ func (s *StockService) SeedStocks(ctx context.Context, limit int) error {
 			continue
 		}
 
+		micCode := seed.NormalizeExchangeMIC(sym.MIC)
+		if micCode == "" {
+			continue
+		}
+
+		exchange, err := s.exchangeRepo.FindByMicCode(ctx, micCode)
+		if err != nil || exchange == nil {
+			continue
+		}
+
 		if callsThisMinute+3 > maxCallsPerMinute {
 			elapsed := time.Since(minuteStart)
 			if elapsed < time.Minute {
@@ -158,7 +189,7 @@ func (s *StockService) SeedStocks(ctx context.Context, limit int) error {
 		listing := &model.Listing{
 			Ticker:      sym.Symbol,
 			Name:        profile.Name,
-			ExchangeMIC: profile.Exchange,
+			ExchangeMIC: micCode,
 			LastRefresh: time.Now(),
 			Price:       quote.CurrentPrice,
 			Ask:         quote.High,
@@ -272,7 +303,7 @@ func (s *StockService) seedGeneratedOption(
 	listing := &model.Listing{
 		Ticker:      ticker,
 		Name:        fmt.Sprintf("%s %s %.2f %s", stockListing.Ticker, optType, strike, expiration.Format("2006-01-02")),
-		ExchangeMIC: stockListing.ExchangeMIC,
+		ExchangeMIC: model.SimulatedExchangeMIC,
 		LastRefresh: time.Now(),
 		// TODO: replace with actual price calculation from black scholes
 		Price:       strike,

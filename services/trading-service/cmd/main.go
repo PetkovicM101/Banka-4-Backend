@@ -93,12 +93,21 @@ func main() {
 			return logging.Init(cfg.Env)
 		}),
 		fx.Invoke(func(db *gorm.DB) error {
+			return db.AutoMigrate(&model.Exchange{})
+		}),
+		fx.Invoke(func(db *gorm.DB) error {
+			return seed.RunExchangeSeed(db)
+		}),
+		fx.Invoke(func(db *gorm.DB) error {
+			return seed.NormalizeListingExchangeMICs(db)
+		}),
+		fx.Invoke(func(db *gorm.DB) error {
 			return db.AutoMigrate(
+				&model.Exchange{},
 				&model.Listing{},
 				&model.Stock{},
 				&model.Option{},
 				&model.ListingDailyPriceInfo{},
-				&model.Exchange{},
 				&model.Order{},
 				&model.OrderOwnership{},
 				&model.OrderTransaction{},
@@ -119,12 +128,7 @@ func main() {
 				},
 			})
 		}),
-		fx.Invoke(func(db *gorm.DB) error {
-			return seed.SeedFuturesContracts(db)
-		}),
-		fx.Invoke(func(db *gorm.DB) error {
-			return seed.RunExchangeSeed(db)
-		}),
+		fx.Invoke(func(db *gorm.DB) error { return seed.SeedFuturesContracts(db) }),
 		fx.Invoke(server.NewServer),
 		fx.Invoke(func(lifecycle fx.Lifecycle, forexService *service.ForexService) {
 			lifecycle.Append(fx.Hook{
