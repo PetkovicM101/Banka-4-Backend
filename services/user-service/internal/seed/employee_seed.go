@@ -75,7 +75,8 @@ var clients = []struct {
 	{"Marko", "Markovic", "M", "1992-03-15", "marko.markovic@example.com", "marko.markovic", "+381601234567", "Knez Mihailova 10, Beograd", "password123", "AAAAAAAAAAAAAAAAAAAA"},
 	{"Ana", "Anic", "F", "1995-07-22", "ana.anic@example.com", "ana.anic", "+381609876543", "Bulevar Oslobodjenja 20, Novi Sad", "password123", "AAAAAAAAAAAAAAAAAAAA"},
 	{"Stefan", "Stefanovic", "M", "1988-11-30", "stefan.stefanovic@example.com", "stefan.stefanovic", "+381611112222", "Trg Republike 5, Beograd", "password123", "AAAAAAAAAAAAAAAAAAAA"},
-  {"Mirko", "Mirkovic", "F", "1995-07-22", "mirko.mirkovic@example.com", "mirko.mirkovic", "+381609876543", "Bulevar Oslobodjenja 20, Novi Sad", "password123", "AAAAAAAAAAAAAAAAAAAA"},
+	{"Mirko", "Mirkovic", "F", "1995-07-22", "mirko.mirkovic@example.com", "mirko.mirkovic", "+381609876543", "Bulevar Oslobodjenja 20, Novi Sad", "password123", "AAAAAAAAAAAAAAAAAAAA"},
+	{"Sekretar", "Drzavne Kase", "M", "1995-07-22", "sekretar@gov.rs", "drzavna.kasa", "+381604555888", "Beograd", "kasa123", "AAAAAAAAAAAAAAAAAAAA"},
 }
 
 func Run(db *gorm.DB) error {
