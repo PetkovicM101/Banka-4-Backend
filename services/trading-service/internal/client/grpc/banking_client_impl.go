@@ -57,3 +57,16 @@ func (c *BankingServiceClient) ConvertCurrency(ctx context.Context, amount float
 	}
 	return resp.ConvertedAmount, nil
 }
+
+func (c *BankingServiceClient) ExecuteTradeSettlement(ctx context.Context, accountNumber, currencyCode string, direction pb.TradeSettlementDirection, amount float64) (*pb.ExecuteTradeSettlementResponse, error) {
+	resp, err := c.stub.ExecuteTradeSettlement(ctx, &pb.ExecuteTradeSettlementRequest{
+		AccountNumber:     accountNumber,
+		TradeCurrencyCode: currencyCode,
+		Direction:         direction,
+		Amount:            amount,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("banking client ExecuteTradeSettlement: %w", err)
+	}
+	return resp, nil
+}

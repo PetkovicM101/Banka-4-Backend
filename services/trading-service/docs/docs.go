@@ -260,37 +260,12 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/orders": {
-            "post": {
-                "description": "Creates a buy or sell order for a listing",
-                "consumes": [
-                    "application/json"
-                ],
         "/api/listings/forex": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "orders"
-                ],
-                "summary": "Create a new order",
-                "parameters": [
-                    {
-                        "description": "Order details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.CreateOrderRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/dto.OrderResponse"
                     "listings"
                 ],
                 "summary": "List forex pairs",
@@ -344,19 +319,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
                         }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/orders/{id}/approve": {
-            "patch": {
-                "description": "Supervisor approves a pending order",
                     }
                 }
             }
@@ -376,14 +338,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "orders"
-                ],
-                "summary": "Approve a pending order",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Order ID",
-                        "name": "id",
                     "listings"
                 ],
                 "summary": "Get forex details",
@@ -400,7 +354,6 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderResponse"
                             "$ref": "#/definitions/dto.ForexDetailedResponse"
                         }
                     },
@@ -415,13 +368,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
                         }
-                    }
-                }
-            }
-        },
-        "/api/orders/{id}/cancel": {
-            "patch": {
-                "description": "Cancel a pending or approved order that hasn't been fully executed",
                     },
                     "500": {
                         "description": "Internal Server Error",
@@ -438,16 +384,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "orders"
-                ],
-                "summary": "Cancel an order",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Order ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
                     "listings"
                 ],
                 "summary": "List futures contracts",
@@ -547,7 +483,6 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderResponse"
                             "$ref": "#/definitions/dto.PaginatedFuturesResponse"
                         }
                     },
@@ -556,19 +491,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
                         }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/orders/{id}/decline": {
-            "patch": {
-                "description": "Supervisor declines a pending order",
                     }
                 }
             }
@@ -588,14 +510,6 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "orders"
-                ],
-                "summary": "Decline a pending order",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Order ID",
-                        "name": "id",
                     "listings"
                 ],
                 "summary": "Get futures details",
@@ -612,7 +526,6 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderResponse"
                             "$ref": "#/definitions/dto.FutureDetailedResponse"
                         }
                     },
@@ -627,40 +540,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
                         }
-                    }
-                }
-            }
-        },
-        "/api/tax/collect": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Runs the tax collection process for all users. Restricted to authorized personnel.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tax"
-                ],
-                "summary": "Trigger tax collection",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.CollectTaxesResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
                     },
                     "500": {
                         "description": "Internal Server Error",
@@ -671,28 +550,12 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/tax/users": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns a paginated list of clients and/or actuaries with their total tax owed in RSD. Filterable by user type, first name, and last name.",
         "/api/listings/options": {
             "get": {
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "tax"
-                ],
-                "summary": "List users with tax information",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filter by user type (client, actuary)",
-                        "name": "userType",
                     "listings"
                 ],
                 "summary": "List options",
@@ -765,22 +628,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by first name",
-                        "name": "first_name",
                         "description": "price|volume|maintenance_margin",
                         "name": "sort_by",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filter by last name",
-                        "name": "last_name",
-                        "in": "query"
-                    },
-                    {
-                        "minimum": 1,
-                        "type": "integer",
-                        "description": "Page number",
                         "description": "asc|desc",
                         "name": "sort_dir",
                         "in": "query"
@@ -792,8 +645,6 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "maximum": 100,
-                        "minimum": 1,
                         "type": "integer",
                         "description": "Page size",
                         "name": "page_size",
@@ -804,7 +655,6 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.ListTaxUsersResponse"
                             "$ref": "#/definitions/dto.PaginatedOptionResponse"
                         }
                     },
@@ -813,44 +663,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
                         }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    }
-                }
-            }
-        }
-    },
-    "definitions": {
-        "dto.CollectTaxesResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.CreateOrderRequest": {
-            "type": "object",
-            "required": [
-                "account_number",
-                "direction",
-                "listing_id",
-                "order_type",
-                "quantity"
-            ],
-            "properties": {
-                "account_number": {
-                    "type": "string"
                     }
                 }
             }
@@ -1306,6 +1118,121 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/tax/collect": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Runs the tax collection process for all users. Restricted to authorized personnel.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tax"
+                ],
+                "summary": "Trigger tax collection",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CollectTaxesResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/tax/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of clients and/or actuaries with their total tax owed in RSD. Filterable by user type, first name, and last name.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tax"
+                ],
+                "summary": "List users with tax information",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by user type (client, actuary)",
+                        "name": "userType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by first name",
+                        "name": "first_name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by last name",
+                        "name": "last_name",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ListTaxUsersResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1323,6 +1250,14 @@ const docTemplate = `{
                 "AssetTypeOption",
                 "AssetTypeForex"
             ]
+        },
+        "dto.CollectTaxesResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
         },
         "dto.CreateOrderRequest": {
             "type": "object",
@@ -1382,23 +1317,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ExchangeResponse": {
-            "type": "object",
-            "properties": {
-                "acronym": {
-                    "type": "string"
-                },
-                "close_time": {
-                    "type": "string"
-                },
-                "currency": {
-                    "type": "string"
-                },
-                "exchange_id": {
-                    "type": "integer"
-                },
-                "mic_code": {
-                    "type": "string"
         "dto.DailyPriceResponse": {
             "type": "object",
             "properties": {
@@ -1683,6 +1601,29 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ListTaxUsersResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserTaxEntry"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "pageSize": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "totalPages": {
+                    "type": "integer"
+                }
+            }
+        },
         "dto.OptionDetailedResponse": {
             "type": "object",
             "properties": {
@@ -1719,39 +1660,6 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "open_time": {
-                    "type": "string"
-                },
-                "polity": {
-                    "type": "string"
-                },
-                "time_zone": {
-                    "type": "integer"
-                },
-                "trading_enabled": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "dto.ListTaxUsersResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.UserTaxEntry"
-                    }
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "pageSize": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "totalPages": {
                 "open_interest": {
                     "type": "integer"
                 },
@@ -1899,26 +1807,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UserTaxEntry": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "firstName": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "lastName": {
-                    "type": "string"
-                },
-                "taxOwedRsd": {
-                    "type": "number"
-                },
-                "userType": {
-                    "type": "string"
         "dto.OrderSummaryResponse": {
             "type": "object",
             "properties": {
@@ -2157,6 +2045,29 @@ const docTemplate = `{
                 },
                 "volume": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.UserTaxEntry": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "firstName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lastName": {
+                    "type": "string"
+                },
+                "taxOwedRsd": {
+                    "type": "number"
+                },
+                "userType": {
+                    "type": "string"
                 }
             }
         },

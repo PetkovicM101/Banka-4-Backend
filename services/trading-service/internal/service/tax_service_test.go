@@ -130,6 +130,11 @@ func (f *fakeBankingClient) ConvertCurrency(_ context.Context, amount float64, _
 	return amount * f.convertedAmount, nil
 }
 
+func (f *fakeBankingClient) ExecuteTradeSettlement(ctx context.Context, accountNumber, currencyCode string, direction pb.TradeSettlementDirection, amount float64) (*pb.ExecuteTradeSettlementResponse, error) {
+	return nil, nil;
+}
+
+
 // ── Constructor ────────────────────────────────────────────────────
 
 func newTestTaxService(repo *fakeTaxRepo, banking *fakeBankingClient) *TaxService {

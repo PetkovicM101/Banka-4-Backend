@@ -9,8 +9,8 @@ import (
 
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/handler"
-	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/config"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/middleware"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/validator"
 	"github.com/gin-contrib/cors"
@@ -24,7 +24,7 @@ import (
 	_ "github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/docs"
 )
 
-func NewServer(lc fx.Lifecycle, cfg *config.Configuration, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient pb.UserServiceClient) {
+func NewServer(lc fx.Lifecycle, cfg *config.Configuration, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
 	r := gin.New()
 
 	InitRouter(r, cfg)
@@ -57,7 +57,7 @@ func InitRouter(r *gin.Engine, cfg *config.Configuration) {
 	validator.RegisterValidators()
 }
 
-func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient pb.UserServiceClient) {
+func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api")

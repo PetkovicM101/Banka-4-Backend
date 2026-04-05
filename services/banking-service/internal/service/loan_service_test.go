@@ -62,12 +62,15 @@ func (f *fakeLoanRequestRepo) Update(_ context.Context, r *model.LoanRequest) er
 // ── Fake Loan Repository ─────────────────────────────────────────────────────
 
 type fakeLoanRepo struct {
-	loan      *model.Loan
-	loans     []model.Loan
-	loanErr   error
-	instErr   error
-	findErr   error
-	updateErr error
+	loan       *model.Loan
+	loans      []model.Loan
+	requests   []model.LoanRequest
+	total      int64
+	findAllErr error
+	loanErr    error
+	instErr    error
+	findErr    error
+	updateErr  error
 }
 
 func (f *fakeLoanRepo) FindByClientID(_ context.Context, _ uint, _ bool) ([]model.Loan, error) {

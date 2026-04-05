@@ -1,9 +1,4 @@
 definitions:
-  dto.CollectTaxesResponse:
-    properties:
-      message:
-        type: string
-    type: object
   dto.AssetType:
     enum:
     - STOCK
@@ -16,6 +11,11 @@ definitions:
     - AssetTypeFutures
     - AssetTypeOption
     - AssetTypeForex
+  dto.CollectTaxesResponse:
+    properties:
+      message:
+        type: string
+    type: object
   dto.CreateOrderRequest:
     properties:
       account_number:
@@ -92,19 +92,6 @@ definitions:
       trading_enabled:
         type: boolean
     type: object
-  dto.ListTaxUsersResponse:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/dto.UserTaxEntry'
-        type: array
-      page:
-        type: integer
-      pageSize:
-        type: integer
-      total:
-        type: integer
-      totalPages:
   dto.ForexDetailedResponse:
     properties:
       ask:
@@ -254,6 +241,21 @@ definitions:
       total:
         type: integer
     type: object
+  dto.ListTaxUsersResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.UserTaxEntry'
+        type: array
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
   dto.OptionDetailedResponse:
     properties:
       ask:
@@ -375,20 +377,6 @@ definitions:
       user_id:
         type: integer
     type: object
-  dto.UserTaxEntry:
-    properties:
-      email:
-        type: string
-      firstName:
-        type: string
-      id:
-        type: integer
-      lastName:
-        type: string
-      taxOwedRsd:
-        type: number
-      userType:
-        type: string
   dto.OrderSummaryResponse:
     properties:
       contract_size:
@@ -546,6 +534,21 @@ definitions:
         type: string
       volume:
         type: integer
+    type: object
+  dto.UserTaxEntry:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: integer
+      lastName:
+        type: string
+      taxOwedRsd:
+        type: number
+      userType:
+        type: string
     type: object
   errors.AppError:
     properties:
@@ -757,25 +760,6 @@ paths:
       summary: Health check
       tags:
       - health
-  /api/orders:
-    post:
-      consumes:
-      - application/json
-      description: Creates a buy or sell order for a listing
-      parameters:
-      - description: Order details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateOrderRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/dto.OrderResponse'
   /api/listings/forex:
     get:
       parameters:
@@ -814,20 +798,6 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/errors.AppError'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/errors.AppError'
-      summary: Create a new order
-      tags:
-      - orders
-  /api/orders/{id}/approve:
-    patch:
-      description: Supervisor approves a pending order
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
       summary: List forex pairs
       tags:
       - listings
@@ -849,7 +819,6 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.OrderResponse'
             $ref: '#/definitions/dto.ForexDetailedResponse'
         "400":
           description: Bad Request
@@ -859,16 +828,6 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/errors.AppError'
-      summary: Approve a pending order
-      tags:
-      - orders
-  /api/orders/{id}/cancel:
-    patch:
-      description: Cancel a pending or approved order that hasn't been fully executed
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
         "500":
           description: Internal Server Error
           schema:
@@ -973,7 +932,6 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.OrderResponse'
             $ref: '#/definitions/dto.FutureDetailedResponse'
         "400":
           description: Bad Request
@@ -983,16 +941,6 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/errors.AppError'
-      summary: Cancel an order
-      tags:
-      - orders
-  /api/orders/{id}/decline:
-    patch:
-      description: Supervisor declines a pending order
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
         "500":
           description: Internal Server Error
           schema:
@@ -1097,7 +1045,6 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.OrderResponse'
             $ref: '#/definitions/dto.OptionDetailedResponse'
         "400":
           description: Bad Request
@@ -1107,13 +1054,6 @@ paths:
           description: Not Found
           schema:
             $ref: '#/definitions/errors.AppError'
-      summary: Decline a pending order
-      tags:
-      - orders
-  /api/tax/collect:
-    post:
-      description: Runs the tax collection process for all users. Restricted to authorized
-        personnel.
         "500":
           description: Internal Server Error
           schema:
@@ -1140,13 +1080,6 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.CollectTaxesResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/errors.AppError'
-        "403":
-          description: Forbidden
             $ref: '#/definitions/dto.StockDetailedResponse'
         "400":
           description: Bad Request
@@ -1162,29 +1095,6 @@ paths:
             $ref: '#/definitions/errors.AppError'
       security:
       - BearerAuth: []
-      summary: Trigger tax collection
-      tags:
-      - tax
-  /api/tax/users:
-    get:
-      description: Returns a paginated list of clients and/or actuaries with their
-        total tax owed in RSD. Filterable by user type, first name, and last name.
-      parameters:
-      - description: Filter by user type (client, actuary)
-        in: query
-        name: userType
-        type: string
-      - description: Filter by first name
-        in: query
-        name: first_name
-        type: string
-      - description: Filter by last name
-        in: query
-        name: last_name
-        type: string
-      - description: Page number
-        in: query
-        minimum: 1
       summary: Get stock details
       tags:
       - listings
@@ -1272,10 +1182,6 @@ paths:
         type: integer
       - description: Page size
         in: query
-        maximum: 100
-        minimum: 1
-        name: page_size
-        type: integer
         name: page_size
         type: integer
       - description: Filter by status (PENDING, APPROVED, DECLINED)
@@ -1296,7 +1202,6 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.ListTaxUsersResponse'
             $ref: '#/definitions/dto.ListOrdersResponse'
         "400":
           description: Bad Request
@@ -1306,15 +1211,6 @@ paths:
           description: Unauthorized
           schema:
             $ref: '#/definitions/errors.AppError'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/errors.AppError'
-      security:
-      - BearerAuth: []
-      summary: List users with tax information
-      tags:
-      - tax
       summary: Get all orders
       tags:
       - orders
@@ -1428,6 +1324,82 @@ paths:
       summary: Decline a pending order
       tags:
       - orders
+  /api/tax/collect:
+    post:
+      description: Runs the tax collection process for all users. Restricted to authorized
+        personnel.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CollectTaxesResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Trigger tax collection
+      tags:
+      - tax
+  /api/tax/users:
+    get:
+      description: Returns a paginated list of clients and/or actuaries with their
+        total tax owed in RSD. Filterable by user type, first name, and last name.
+      parameters:
+      - description: Filter by user type (client, actuary)
+        in: query
+        name: userType
+        type: string
+      - description: Filter by first name
+        in: query
+        name: first_name
+        type: string
+      - description: Filter by last name
+        in: query
+        name: last_name
+        type: string
+      - description: Page number
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        maximum: 100
+        minimum: 1
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ListTaxUsersResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: List users with tax information
+      tags:
+      - tax
 securityDefinitions:
   BearerAuth:
     description: JWT Authorization header using the Bearer scheme.

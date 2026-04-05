@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/RAF-SI-2025/Banka-4-Backend/services/banking-service/internal/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -29,10 +28,10 @@ type BankingService struct {
 
 func NewBankingService(
 	accountRepo repository.AccountRepository,
-  paymentService:  paymentService,
+  paymentService *service.PaymentService,
 	transactionRepo repository.TransactionRepository,
 	transactionProcessor *service.TransactionProcessor,
-	exchangeService service.CurrencyConverter,
+	exchangeService *service.ExchangeService,
 ) *BankingService {
 	return &BankingService{
 		accountRepo:          accountRepo,
