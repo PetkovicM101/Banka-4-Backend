@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -32,7 +31,7 @@ func NewMobileSecretClient(cfg *config.Configuration) MobileSecretClient {
 	}
 }
 
-func (c *mobileSecretClient) GetMobileSecret(ctx context.Context, authorizationHeader string) (string, error) {
+func (c *mobileSecretClient) GetMobileSecret(ctx context.Context, authorizationHeader string) (secret string, err error) {
 	if strings.TrimSpace(authorizationHeader) == "" {
 		return "", fmt.Errorf("missing authorization header")
 	}
@@ -49,12 +48,12 @@ func (c *mobileSecretClient) GetMobileSecret(ctx context.Context, authorizationH
 		return "", fmt.Errorf("request mobile secret: %w", err)
 	}
 
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("close mobile secret response body: %w", closeErr)
+			secret = ""
 		}
-	}(resp.Body)
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("user-service returned status %d", resp.StatusCode)
@@ -68,5 +67,6 @@ func (c *mobileSecretClient) GetMobileSecret(ctx context.Context, authorizationH
 		return "", fmt.Errorf("empty mobile secret")
 	}
 
-	return payload.Secret, nil
+	secret = payload.Secret
+	return secret, nil
 }
