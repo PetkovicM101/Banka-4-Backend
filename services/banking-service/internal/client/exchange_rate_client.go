@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -45,7 +46,13 @@ func (c *exchangeRateClient) FetchRates(ctx context.Context) (*ExchangeRateAPIRe
 		return nil, fmt.Errorf("fetching exchange rates: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("exchange rate API returned status %d", resp.StatusCode)
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -47,7 +48,13 @@ func (c *mobileSecretClient) GetMobileSecret(ctx context.Context, authorizationH
 	if err != nil {
 		return "", fmt.Errorf("request mobile secret: %w", err)
 	}
-	defer resp.Body.Close()
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("user-service returned status %d", resp.StatusCode)
