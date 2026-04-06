@@ -18,28 +18,28 @@ func Middleware(verifier TokenVerifier, provider PermissionProvider) gin.Handler
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if header == "" {
-			c.Error(errors.UnauthorizedErr("missing authorization header"))
+			_ = c.Error(errors.UnauthorizedErr("missing authorization header"))
 			c.Abort()
 			return
 		}
 
 		parts := strings.SplitN(header, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			c.Error(errors.UnauthorizedErr("authorization header must use bearer"))
+			_ = c.Error(errors.UnauthorizedErr("authorization header must use bearer"))
 			c.Abort()
 			return
 		}
 
 		claims, err := verifier.VerifyToken(parts[1])
 		if err != nil {
-			c.Error(errors.UnauthorizedErr("invalid or expired token"))
+			_ = c.Error(errors.UnauthorizedErr("invalid or expired token"))
 			c.Abort()
 			return
 		}
 
 		permissions, err := provider.GetPermissions(c.Request.Context(), claims)
 		if err != nil {
-			c.Error(errors.InternalErr(err))
+			_ = c.Error(errors.InternalErr(err))
 			c.Abort()
 			return
 		}
@@ -63,14 +63,14 @@ func RequirePermission(permissions ...permission.Permission) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		context := GetAuth(c)
 		if context == nil {
-			c.Error(errors.UnauthorizedErr("not authenticated"))
+			_ = c.Error(errors.UnauthorizedErr("not authenticated"))
 			c.Abort()
 			return
 		}
 
 		for _, required := range permissions {
 			if !hasPermission(required, context.Permissions) {
-				c.Error(errors.ForbiddenErr("insufficient permissions"))
+				_ = c.Error(errors.ForbiddenErr("insufficient permissions"))
 				c.Abort()
 				return
 			}
@@ -86,7 +86,7 @@ func RequireIdentityType(allowed ...IdentityType) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ac := GetAuth(c)
 		if ac == nil {
-			c.Error(errors.UnauthorizedErr("not authenticated"))
+			_ = c.Error(errors.UnauthorizedErr("not authenticated"))
 			c.Abort()
 			return
 		}
@@ -98,7 +98,7 @@ func RequireIdentityType(allowed ...IdentityType) gin.HandlerFunc {
 			}
 		}
 
-		c.Error(errors.ForbiddenErr("access denied for this identity type"))
+		_ = c.Error(errors.ForbiddenErr("access denied for this identity type"))
 		c.Abort()
 	}
 }
@@ -153,7 +153,7 @@ func hasPermission(perm permission.Permission, permissions []permission.Permissi
 func AnyOf(middlewares ...gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		for _, m := range middlewares {
-			clone := *c
+			clone := c.Copy()
 			clone.Writer = c.Writer
 			clone.Request = c.Request
 			clone.Set("skipAbort", true)
