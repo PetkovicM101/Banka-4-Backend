@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"net/http/httptest"
 	"strconv"
 	"strings"
 
@@ -137,7 +138,7 @@ func RequireClientSelf(param string, allowEmployee bool) gin.HandlerFunc {
 }
 
 func abortWithError(c *gin.Context, err error) {
-	c.Error(err)
+	_ = c.Error(err)
 	c.Abort()
 }
 
@@ -153,12 +154,16 @@ func hasPermission(perm permission.Permission, permissions []permission.Permissi
 func AnyOf(middlewares ...gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		for _, m := range middlewares {
-			clone := c.Copy()
-			clone.Writer = c.Writer
-			clone.Request = c.Request
-			clone.Set("skipAbort", true)
-			m(&clone)
-			if !clone.IsAborted() {
+			probe, _ := gin.CreateTestContext(httptest.NewRecorder())
+			probe.Request = c.Request
+			probe.Params = c.Params
+
+			if authCtx := GetAuth(c); authCtx != nil {
+				SetAuth(probe, authCtx)
+			}
+
+			m(probe)
+			if !probe.IsAborted() {
 				// one middleware passed, let original context continue
 				c.Next()
 				return
