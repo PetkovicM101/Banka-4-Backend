@@ -81,19 +81,19 @@ func (h *ActuaryHandler) ListActuaries(c *gin.Context) {
 func (h *ActuaryHandler) UpdateActuarySettings(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.Error(errors.BadRequestErr("invalid employee id"))
+		_ = c.Error(errors.BadRequestErr("invalid employee id"))
 		return
 	}
 
 	var req dto.UpdateActuarySettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
 	actuary, svcErr := h.service.UpdateActuarySettings(c.Request.Context(), uint(id), &req)
 	if svcErr != nil {
-		c.Error(svcErr)
+		_ = c.Error(svcErr)
 		return
 	}
 
