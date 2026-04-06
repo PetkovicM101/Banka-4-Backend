@@ -43,7 +43,7 @@ func NewActuaryHandler(service *service.ActuaryService) *ActuaryHandler {
 func (h *ActuaryHandler) ListActuaries(c *gin.Context) {
 	var query dto.ListActuariesQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
@@ -56,7 +56,7 @@ func (h *ActuaryHandler) ListActuaries(c *gin.Context) {
 
 	result, err := h.service.GetAllActuaries(c.Request.Context(), &query)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
