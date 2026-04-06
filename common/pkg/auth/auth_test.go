@@ -37,10 +37,7 @@ func (f *fakePermissionProvider) GetPermissions(_ context.Context, _ *jwt.Claims
 
 func init() {
 	gin.SetMode(gin.TestMode)
-	err := logging.Init("test")
-	if err != nil {
-		t.Fatalf("failed to init logging: %v", err)
-	}
+	_ = logging.Init("test")
 }
 
 func middlewareRouter(verifier auth.TokenVerifier, provider auth.PermissionProvider) *gin.Engine {

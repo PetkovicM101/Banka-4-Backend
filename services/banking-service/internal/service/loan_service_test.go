@@ -31,8 +31,8 @@ type fakeLoanRequestRepo struct {
 	findAllErr error
 	updateErr  error
 	updated    *model.LoanRequest
-	loan       *model.Loan
-	loans      []model.Loan
+	//loan       *model.Loan	UNUSED
+	//loans      []model.Loan	UNUSED
 }
 
 func (f *fakeLoanRequestRepo) CreateRequest(_ context.Context, r *model.LoanRequest) error {
@@ -42,7 +42,7 @@ func (f *fakeLoanRequestRepo) CreateRequest(_ context.Context, r *model.LoanRequ
 	r.ID = 1
 	return nil
 }
-  
+
 func (f *fakeLoanRequestRepo) FindAll(_ context.Context, _ *dto.ListLoanRequestsQuery) ([]model.LoanRequest, int64, error) {
 	return f.requests, f.total, f.findAllErr
 }
@@ -70,7 +70,7 @@ type fakeLoanRepo struct {
 	loanErr    error
 	instErr    error
 	findErr    error
-	updateErr  error
+	//updateErr  error	UNUSED
 }
 
 func (f *fakeLoanRepo) FindByClientID(_ context.Context, _ uint, _ bool) ([]model.Loan, error) {
@@ -118,7 +118,7 @@ func (f *fakeLoanRepo) FindActiveVariableRateLoans(_ context.Context) ([]model.L
 }
 
 func (f *fakeLoanRepo) FindAll(_ context.Context, _ *dto.ListLoanRequestsQuery) ([]model.LoanRequest, int64, error) {
-  return f.requests, f.total, f.findAllErr
+	return f.requests, f.total, f.findAllErr
 }
 
 // ── Fake Loan Type Repository ────────────────────────────────────────────────

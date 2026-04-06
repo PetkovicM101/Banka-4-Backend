@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
+	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
@@ -479,11 +479,12 @@ func (s *OrderService) validateAccount(ctx context.Context, accountNumber string
 		return errors.ServiceUnavailableErr(err)
 	}
 
-	if authCtx.IdentityType == auth.IdentityClient {
+	switch authCtx.IdentityType {
+	case auth.IdentityClient:
 		if authCtx.ClientID == nil || uint64(*authCtx.ClientID) != account.ClientId {
 			return errors.ForbiddenErr("account does not belong to you")
 		}
-	} else if authCtx.IdentityType == auth.IdentityEmployee {
+	case auth.IdentityEmployee:
 		if account.AccountType != "Bank" {
 			return errors.BadRequestErr("employees must use a bank account")
 		}
