@@ -184,6 +184,7 @@ func (r *listingRepository) FindFutures(ctx context.Context, filter ListingFilte
 	db = joinLatestDaily(db)
 	db = applyListingFilters(db, filter)
 
+	// FIX: zamena PostgreSQL-specifičnog ::date cast-a sa date range
 	if filter.SettlementDate != nil {
 		start := filter.SettlementDate.Truncate(24 * time.Hour)
 		end := start.Add(24 * time.Hour)

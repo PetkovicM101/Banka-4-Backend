@@ -22,6 +22,12 @@ func setupListingTestDB(t *testing.T) *gorm.DB {
 		t.Fatal(err)
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+
 	if err := db.AutoMigrate(
 		&model.Exchange{},
 		&model.Asset{},

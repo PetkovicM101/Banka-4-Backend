@@ -7,7 +7,7 @@ type ForexPair struct {
 
 	AssetID uint     `gorm:"not null;uniqueIndex"`
 	Asset   Asset
-	Listing *Listing `gorm:"foreignKey:AssetID;references:AssetID"`
+	Listing *Listing `gorm:"foreignKey:AssetID;references:AssetID;constraint:-"`
 
 	Base  string `gorm:"size:3;not null;uniqueIndex:idx_pair"`
 	Quote string `gorm:"size:3;not null;uniqueIndex:idx_pair"`
