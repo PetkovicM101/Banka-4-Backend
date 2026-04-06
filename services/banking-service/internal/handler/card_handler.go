@@ -37,7 +37,7 @@ func NewCardHandler(service *service.CardService) *CardHandler {
 func (h *CardHandler) RequestCard(c *gin.Context) {
 	var req dto.RequestCardRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
@@ -59,7 +59,7 @@ func (h *CardHandler) RequestCard(c *gin.Context) {
 
 	_, err := h.service.RequestCard(c.Request.Context(), input)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -86,13 +86,13 @@ func (h *CardHandler) RequestCard(c *gin.Context) {
 func (h *CardHandler) ConfirmCardRequest(c *gin.Context) {
 	var req dto.ConfirmCardRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
 	card, err := h.service.ConfirmCardRequest(c.Request.Context(), req.AccountNumber, req.ConfirmationCode)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
