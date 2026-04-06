@@ -43,14 +43,14 @@ func NewListingHandler(svc *service.ListingService) *ListingHandler {
 func (h *ListingHandler) GetStocks(c *gin.Context) {
 	var q dto.ListingQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 	q.Normalize()
 
 	result, err := h.svc.GetStocks(c.Request.Context(), q)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -72,13 +72,13 @@ func (h *ListingHandler) GetStocks(c *gin.Context) {
 func (h *ListingHandler) GetStockDetails(c *gin.Context) {
 	listingId, err := strconv.ParseUint(c.Param("listingId"), 10, 64)
 	if err != nil {
-		c.Error(errors.BadRequestErr("invalid listing id"))
+		_ = c.Error(errors.BadRequestErr("invalid listing id"))
 		return
 	}
 
 	result, err := h.svc.GetStockDetails(c.Request.Context(), uint(listingId))
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -109,14 +109,14 @@ func (h *ListingHandler) GetStockDetails(c *gin.Context) {
 func (h *ListingHandler) GetFutures(c *gin.Context) {
 	var q dto.ListingQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 	q.Normalize()
 
 	result, err := h.svc.GetFutures(c.Request.Context(), q)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -138,14 +138,14 @@ func (h *ListingHandler) GetFutures(c *gin.Context) {
 func (h *ListingHandler) GetForex(c *gin.Context) {
 	var q dto.ListingQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 	q.Normalize()
 
 	result, err := h.svc.GetForex(c.Request.Context(), q)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -176,14 +176,14 @@ func (h *ListingHandler) GetForex(c *gin.Context) {
 func (h *ListingHandler) GetOptions(c *gin.Context) {
 	var q dto.ListingQuery
 	if err := c.ShouldBindQuery(&q); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 	q.Normalize()
 
 	result, err := h.svc.GetOptions(c.Request.Context(), q)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -205,13 +205,13 @@ func (h *ListingHandler) GetOptions(c *gin.Context) {
 func (h *ListingHandler) GetFutureDetails(c *gin.Context) {
 	listingId, err := strconv.ParseUint(c.Param("listingId"), 10, 64)
 	if err != nil {
-		c.Error(errors.BadRequestErr("invalid listing id"))
+		_ = c.Error(errors.BadRequestErr("invalid listing id"))
 		return
 	}
 
 	result, err := h.svc.GetFutureDetails(c.Request.Context(), uint(listingId))
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -233,13 +233,13 @@ func (h *ListingHandler) GetFutureDetails(c *gin.Context) {
 func (h *ListingHandler) GetForexDetails(c *gin.Context) {
 	listingId, err := strconv.ParseUint(c.Param("listingId"), 10, 64)
 	if err != nil {
-		c.Error(errors.BadRequestErr("invalid listing id"))
+		_ = c.Error(errors.BadRequestErr("invalid listing id"))
 		return
 	}
 
 	result, err := h.svc.GetForexDetails(c.Request.Context(), uint(listingId))
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -261,13 +261,13 @@ func (h *ListingHandler) GetForexDetails(c *gin.Context) {
 func (h *ListingHandler) GetOptionDetails(c *gin.Context) {
 	listingId, err := strconv.ParseUint(c.Param("listingId"), 10, 64)
 	if err != nil {
-		c.Error(errors.BadRequestErr("invalid listing id"))
+		_ = c.Error(errors.BadRequestErr("invalid listing id"))
 		return
 	}
 
 	result, err := h.svc.GetOptionDetails(c.Request.Context(), uint(listingId))
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 	c.JSON(http.StatusOK, result)

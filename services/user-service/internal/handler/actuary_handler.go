@@ -116,13 +116,13 @@ func (h *ActuaryHandler) UpdateActuarySettings(c *gin.Context) {
 func (h *ActuaryHandler) ResetUsedLimit(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		c.Error(errors.BadRequestErr("invalid employee id"))
+		_ = c.Error(errors.BadRequestErr("invalid employee id"))
 		return
 	}
 
 	actuary, svcErr := h.service.ResetUsedLimit(c.Request.Context(), uint(id))
 	if svcErr != nil {
-		c.Error(svcErr)
+		_ = c.Error(svcErr)
 		return
 	}
 

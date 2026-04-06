@@ -35,13 +35,13 @@ func NewPortfolioHandler(service *service.PortfolioService) *PortfolioHandler {
 func (h *PortfolioHandler) GetClientPortfolio(c *gin.Context) {
 	clientID, err := strconv.ParseUint(c.Param("clientId"), 10, 64)
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid client id"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid client id"))
 		return
 	}
 
 	assets, err := h.service.GetPortfolio(c.Request.Context(), uint(clientID), model.OwnerTypeClient)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -64,13 +64,13 @@ func (h *PortfolioHandler) GetClientPortfolio(c *gin.Context) {
 func (h *PortfolioHandler) GetActuaryPortfolio(c *gin.Context) {
 	actID, err := strconv.ParseUint(c.Param("actId"), 10, 64)
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid actuary id"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid actuary id"))
 		return
 	}
 
 	assets, err := h.service.GetPortfolio(c.Request.Context(), uint(actID), model.OwnerTypeActuary)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
