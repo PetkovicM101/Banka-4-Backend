@@ -15,7 +15,7 @@ type PortfolioAssetResponse struct {
 	Type              AssetType `json:"type"`
 	Ticker            string    `json:"ticker"`
 	Amount            float64   `json:"amount"`
-	PricePerUnit      float64   `json:"pricePerUnit"`
+	PricePerUnitRSD   float64   `json:"pricePerUnitRSD"`
 	AvgBuyPriceRSD    float64   `json:"avgBuyPrice"`
 	LastModified      time.Time `json:"lastModified"`
 	Profit            float64   `json:"profit"`
@@ -23,5 +23,5 @@ type PortfolioAssetResponse struct {
 }
 
 type PortfolioProfitResponse struct {
-	TotalProfit float64 `json:"totalProfit"`
+	TotalProfitRSD float64 `json:"totalProfit"`
 }

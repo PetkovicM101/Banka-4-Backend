@@ -115,7 +115,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 			currentPrice = m.listing.Price
 		}
 
-		currency := "USD" // default for most exchanges
+		currency := "USD" // default
 		if m.listing != nil && m.listing.Exchange != nil && m.listing.Exchange.Currency != "" {
 			currency = m.listing.Exchange.Currency
 		}
@@ -137,7 +137,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 			Type:              m.assetType,
 			Ticker:            ticker,
 			Amount:            o.Amount,
-			PricePerUnit:      currentPrice,
+			PricePerUnitRSD:   currentPriceRSD,
 			AvgBuyPriceRSD:    o.AvgBuyPriceRSD,
 			LastModified:      o.UpdatedAt,
 			Profit:            profit,
@@ -148,7 +148,6 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 	return result, nil
 }
 
-// toRSD converts amount from the given currency to RSD. Returns amount unchanged if currency is already RSD.
 func (s *PortfolioService) toRSD(ctx context.Context, amount float64, currency string) (float64, error) {
 	if currency == "RSD" {
 		return amount, nil

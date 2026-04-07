@@ -121,7 +121,7 @@ func TestGetPortfolio_HappyPath_Stock(t *testing.T) {
 	require.Equal(t, dto.AssetTypeStock, a.Type)
 	require.Equal(t, "AAPL", a.Ticker)
 	require.Equal(t, float64(10), a.Amount)
-	require.Equal(t, 150.0, a.PricePerUnit)
+	require.Equal(t, 150.0, a.PricePerUnitRSD)
 	require.InDelta(t, (150.0-100.0)*10, a.Profit, 0.001)
 	require.NotNil(t, a.OutstandingShares)
 	require.Equal(t, float64(1_000_000), *a.OutstandingShares)
