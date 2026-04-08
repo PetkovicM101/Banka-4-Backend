@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	orderExecutionPollInterval = 15 * time.Second
+	orderExecutionPollInterval = time.Second
 	stopCheckInterval          = 5 * time.Second
 	executionRetryInterval     = 30 * time.Second
 	maxOrdersPerTick           = 25
@@ -199,7 +199,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, req dto.CreateOrderReque
 		nextExecutionAt := s.initialExecutionTime(session, order.AfterHours)
 		order.NextExecutionAt = &nextExecutionAt
 	}
-	log.Default().Print("created order")
 	if err := s.orderRepo.Create(ctx, &order); err != nil {
 		return nil, errors.InternalErr(err)
 	}
@@ -848,45 +847,35 @@ func normalizeCurrencyCode(currency string) string {
 }
 
 func (s *OrderService) recordProfitTax(ctx context.Context, order *model.Order, fillQty uint, pricePerUnit float64, tradeCurrency string) error {
-	log.Print("entered recordProfitTax")
 	if order.Direction != model.OrderDirectionSell || order.RemainingPortions() != 0 {
 		return nil
 	}
 
 	ownership, err := s.getOwnershipForOrder(ctx, order)
 	if err != nil {
-		log.Print("failed to get ownership for order" + err.Error())
 		return err
 	}
 	if ownership == nil || ownership.AvgBuyPriceRSD <= 0 {
-		log.Print("ownership for order is nil or avg buy price <0=")
 		return nil
 	}
 
 	fillAmount := float64(fillQty) * order.ContractSize
-	log.Print("pricePerUnit:", pricePerUnit)
-	log.Print("fillAmount:", fillAmount)
 
 	AvgBuyPriceTradeCurrency, err := s.bankingClient.ConvertCurrency(ctx, ownership.AvgBuyPriceRSD, "RSD", tradeCurrency)
-	log.Print("ownership:", AvgBuyPriceTradeCurrency)
 	profitInTradeCurrency := (pricePerUnit - AvgBuyPriceTradeCurrency) * fillAmount
 	if profitInTradeCurrency <= 0 {
-		log.Print("profit in trade currency is <= 0")
 		return nil
 	}
 
 	accountCurrency, err := s.bankingClient.GetAccountCurrency(ctx, order.AccountNumber)
 	if err != nil {
-		log.Print("failed to find account currency")
 		return err
 	}
 
 	profitInAccountCurrency, err := s.bankingClient.ConvertCurrency(ctx, profitInTradeCurrency, tradeCurrency, accountCurrency)
 	if err != nil {
-		log.Print("failed to convert profit ")
 		return err
 	}
-	log.Default().Print("called tax service")
 
 	var employeeID *uint
 	if order.OwnerType == model.OwnerTypeActuary {
