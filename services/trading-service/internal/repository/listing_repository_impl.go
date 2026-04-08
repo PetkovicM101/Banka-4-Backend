@@ -25,14 +25,22 @@ func (r *listingRepository) FindAll(ctx context.Context) ([]model.Listing, error
 	return listings, nil
 }
 
-func (r *listingRepository) FindByID(ctx context.Context, id uint) (*model.Listing, error) {
+func (r *listingRepository) FindByID(ctx context.Context, id uint, minutesBack int) (*model.Listing, error) {
 	var listing model.Listing
-	result := r.db.WithContext(ctx).
-		Preload("Stock").
-		Preload("DailyPriceInfos", func(db *gorm.DB) *gorm.DB {
-			return db.Order("date ASC")
-		}).
-		First(&listing, id)
+
+	query := r.db.WithContext(ctx).Preload("Stock")
+
+	query = query.Preload("DailyPriceInfos", func(db *gorm.DB) *gorm.DB {
+		q := db.Order("date ASC")
+
+		if minutesBack > 0 {
+			since := time.Now().Add(-time.Duration(minutesBack) * time.Minute)
+			q = q.Where("date >= ?", since)
+		}
+		return q
+	})
+
+	result := query.First(&listing, id)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
