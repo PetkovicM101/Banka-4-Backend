@@ -15,6 +15,58 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/actuary/{actId}/accumulated-tax": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the total accumulated tax for a specific actuary (employee) across all accounts in RSD.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tax"
+                ],
+                "summary": "Get accumulated tax for an actuary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Actuary ID",
+                        "name": "actId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaxInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/actuary/{actId}/assets": {
             "get": {
                 "security": [
@@ -76,6 +128,116 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/actuary/{actId}/assets/profit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the total accumulated profit across all currently held asset positions for an actuary.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Get total profit for an actuary portfolio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Actuary ID",
+                        "name": "actId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PortfolioProfitResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/client/{clientId}/accumulated-tax": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the total accumulated tax for a specific client across all their accounts in RSD.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tax"
+                ],
+                "summary": "Get accumulated tax for a client",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TaxInfoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/client/{clientId}/assets": {
             "get": {
                 "security": [
@@ -108,6 +270,64 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/dto.PortfolioAssetResponse"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/client/{clientId}/assets/profit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the total accumulated profit across all currently held asset positions for a client.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Get total profit for a client portfolio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PortfolioProfitResponse"
                         }
                     },
                     "400": {
@@ -1925,19 +2145,19 @@ const docTemplate = `{
                 "amount": {
                     "type": "number"
                 },
+                "avgBuyPrice": {
+                    "type": "number"
+                },
                 "lastModified": {
                     "type": "string"
                 },
                 "outstandingShares": {
                     "type": "number"
                 },
-                "pricePerUnit": {
+                "pricePerUnitRSD": {
                     "type": "number"
                 },
                 "profit": {
-                    "type": "number"
-                },
-                "taxAmount": {
                     "type": "number"
                 },
                 "ticker": {
@@ -1945,6 +2165,14 @@ const docTemplate = `{
                 },
                 "type": {
                     "$ref": "#/definitions/dto.AssetType"
+                }
+            }
+        },
+        "dto.PortfolioProfitResponse": {
+            "type": "object",
+            "properties": {
+                "totalProfit": {
+                    "type": "number"
                 }
             }
         },
@@ -2045,6 +2273,14 @@ const docTemplate = `{
                 },
                 "volume": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.TaxInfoResponse": {
+            "type": "object",
+            "properties": {
+                "totalTax": {
+                    "type": "number"
                 }
             }
         },

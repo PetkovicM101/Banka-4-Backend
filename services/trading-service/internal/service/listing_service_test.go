@@ -22,8 +22,15 @@ func setupListingTestDB(t *testing.T) *gorm.DB {
 		t.Fatal(err)
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+
 	if err := db.AutoMigrate(
 		&model.Exchange{},
+		&model.Asset{},
 		&model.Listing{},
 		&model.Stock{},
 		&model.FuturesContract{},
@@ -54,9 +61,16 @@ func seedListingTestExchanges(t *testing.T, db *gorm.DB) {
 func seedListingTestData(t *testing.T, db *gorm.DB) {
 	seedListingTestExchanges(t, db)
 
+	// Create assets
+	aaplAsset := model.Asset{Ticker: "AAPL", Name: "Apple Inc", AssetType: model.AssetTypeStock}
+	googAsset := model.Asset{Ticker: "GOOG", Name: "Alphabet Inc", AssetType: model.AssetTypeStock}
+	db.Create(&aaplAsset)
+	db.Create(&googAsset)
+
+	// Create listings referencing assets
 	listings := []model.Listing{
-		{Ticker: "AAPL", Name: "Apple Inc", ExchangeMIC: "XNAS", Price: 150.0, Ask: 151.0, MaintenanceMargin: 10.0, LastRefresh: time.Now(), ListingType: model.ListingTypeStock},
-		{Ticker: "GOOG", Name: "Alphabet Inc", ExchangeMIC: "XNAS", Price: 2800.0, Ask: 2801.0, MaintenanceMargin: 20.0, LastRefresh: time.Now(), ListingType: model.ListingTypeStock},
+		{AssetID: aaplAsset.AssetID, ExchangeMIC: "XNAS", Price: 150.0, Ask: 151.0, MaintenanceMargin: 10.0, LastRefresh: time.Now()},
+		{AssetID: googAsset.AssetID, ExchangeMIC: "XNAS", Price: 2800.0, Ask: 2801.0, MaintenanceMargin: 20.0, LastRefresh: time.Now()},
 	}
 	for i := range listings {
 		if err := db.Create(&listings[i]).Error; err != nil {
@@ -65,11 +79,11 @@ func seedListingTestData(t *testing.T, db *gorm.DB) {
 	}
 
 	stocks := []model.Stock{
-		{ListingID: listings[0].ListingID, OutstandingShares: 1000000, DividendYield: 0.5},
-		{ListingID: listings[1].ListingID, OutstandingShares: 500000, DividendYield: 0.0},
+		{AssetID: aaplAsset.AssetID, OutstandingShares: 1000000, DividendYield: 0.5},
+		{AssetID: googAsset.AssetID, OutstandingShares: 500000, DividendYield: 0.0},
 	}
 	for _, s := range stocks {
-		if err := db.Omit("Listing").Create(&s).Error; err != nil {
+		if err := db.Omit("Asset").Create(&s).Error; err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -84,42 +98,44 @@ func seedListingTestData(t *testing.T, db *gorm.DB) {
 		}
 	}
 
+	// Futures
+	futuresAsset := model.Asset{Ticker: "CLJ26", Name: "Crude Oil", AssetType: model.AssetTypeFuture}
+	db.Create(&futuresAsset)
+
 	futuresListing := model.Listing{
-		Ticker: "CLJ26", Name: "Crude Oil", ExchangeMIC: "XCME",
-		Price: 75.0, Ask: 75.5, MaintenanceMargin: 5.0,
-		LastRefresh: time.Now(), ListingType: model.ListingTypeFuture,
+		AssetID: futuresAsset.AssetID, ExchangeMIC: "XCME",
+		Price: 75.0, Ask: 75.5, MaintenanceMargin: 5.0, LastRefresh: time.Now(),
 	}
-	if err := db.Create(&futuresListing).Error; err != nil {
-		t.Fatal(err)
-	}
+	db.Create(&futuresListing)
+
 	futuresContract := model.FuturesContract{
-		ListingID:      futuresListing.ListingID,
+		AssetID:        futuresAsset.AssetID,
 		ContractSize:   1000,
 		ContractUnit:   "barrels",
 		SettlementDate: time.Now().AddDate(0, 3, 0),
 	}
-	if err := db.Create(&futuresContract).Error; err != nil {
-		t.Fatal(err)
-	}
+	db.Create(&futuresContract)
+
+	// Forex
+	eurUsdAsset := model.Asset{Ticker: "EUR/USD", Name: "EUR/USD", AssetType: model.AssetTypeForexPair}
+	usdRsdAsset := model.Asset{Ticker: "USD/RSD", Name: "USD/RSD", AssetType: model.AssetTypeForexPair}
+	db.Create(&eurUsdAsset)
+	db.Create(&usdRsdAsset)
 
 	forexListings := []model.Listing{
-		{Ticker: "EUR/USD", Name: "EUR/USD", ExchangeMIC: model.SimulatedExchangeMIC, Price: 1.08, LastRefresh: time.Now(), ListingType: model.ListingTypeForexPair},
-		{Ticker: "USD/RSD", Name: "USD/RSD", ExchangeMIC: model.SimulatedExchangeMIC, Price: 117.0, LastRefresh: time.Now(), ListingType: model.ListingTypeForexPair},
+		{AssetID: eurUsdAsset.AssetID, ExchangeMIC: model.SimulatedExchangeMIC, Price: 1.08, LastRefresh: time.Now()},
+		{AssetID: usdRsdAsset.AssetID, ExchangeMIC: model.SimulatedExchangeMIC, Price: 117.0, LastRefresh: time.Now()},
 	}
 	for i := range forexListings {
-		if err := db.Create(&forexListings[i]).Error; err != nil {
-			t.Fatal(err)
-		}
+		db.Create(&forexListings[i])
 	}
 
 	forexPairs := []model.ForexPair{
-		{ListingID: forexListings[0].ListingID, Base: "EUR", Quote: "USD", Rate: 1.08},
-		{ListingID: forexListings[1].ListingID, Base: "USD", Quote: "RSD", Rate: 117.0},
+		{AssetID: eurUsdAsset.AssetID, Base: "EUR", Quote: "USD", Rate: 1.08},
+		{AssetID: usdRsdAsset.AssetID, Base: "USD", Quote: "RSD", Rate: 117.0},
 	}
 	for _, p := range forexPairs {
-		if err := db.Omit("Listing").Create(&p).Error; err != nil {
-			t.Fatal(err)
-		}
+		db.Omit("Asset").Create(&p)
 	}
 }
 
@@ -225,18 +241,25 @@ func TestGetStocks_InitialMarginCost(t *testing.T) {
 		}
 	}
 }
+
 func TestGetStockDetails_Success(t *testing.T) {
 	db := setupListingTestDB(t)
 	seedListingTestData(t, db)
 
+	// Create an option for the AAPL stock
+	optionAsset := model.Asset{
+		Ticker: "AAPL220404C00180000", Name: "AAPL Call", AssetType: model.AssetTypeOption,
+	}
+	db.Create(&optionAsset)
+
 	optionListing := model.Listing{
-		Ticker: "AAPL220404C00180000", Name: "AAPL Call", ExchangeMIC: "XNAS",
-		Price: 5.50, Ask: 5.60, ListingType: model.ListingTypeOption, LastRefresh: time.Now(),
+		AssetID: optionAsset.AssetID, ExchangeMIC: "XNAS",
+		Price: 5.50, Ask: 5.60, LastRefresh: time.Now(),
 	}
 	db.Create(&optionListing)
 
 	option := model.Option{
-		ListingID: optionListing.ListingID, StockID: 1, OptionType: model.OptionTypeCall,
+		AssetID: optionAsset.AssetID, StockID: 1, OptionType: model.OptionTypeCall,
 		StrikePrice: 180.0, ContractSize: 100, SettlementDate: time.Now().AddDate(0, 1, 0),
 	}
 	db.Create(&option)
@@ -373,9 +396,9 @@ func TestGetFutureDetails_Success(t *testing.T) {
 	db := setupListingTestDB(t)
 	seedListingTestData(t, db)
 
-	// Nalazimo ID od futures ugovora koji je ubačen u seed-u (CLJ26)
 	var futureListing model.Listing
-	db.Where("ticker = ?", "CLJ26").First(&futureListing)
+	db.Joins("INNER JOIN assets ON assets.asset_id = listings.asset_id").
+		Where("assets.ticker = ?", "CLJ26").First(&futureListing)
 
 	svc := NewListingService(
 		repository.NewListingRepository(db),
@@ -404,9 +427,9 @@ func TestGetForexDetails_Success(t *testing.T) {
 	db := setupListingTestDB(t)
 	seedListingTestData(t, db)
 
-	// Nalazimo ID od EUR/USD koji je ubačen u seed-u
 	var forexListing model.Listing
-	db.Where("ticker = ?", "EUR/USD").First(&forexListing)
+	db.Joins("INNER JOIN assets ON assets.asset_id = listings.asset_id").
+		Where("assets.ticker = ?", "EUR/USD").First(&forexListing)
 
 	svc := NewListingService(
 		repository.NewListingRepository(db),
@@ -428,19 +451,250 @@ func TestGetForexDetails_Success(t *testing.T) {
 	}
 }
 
+// --- GetOptions Tests ---
+
+func TestGetOptions_ReturnsAll(t *testing.T) {
+	db := setupListingTestDB(t)
+	seedListingTestData(t, db)
+
+	// Insert two option assets, listings, and options
+	optAsset1 := model.Asset{Ticker: "AAPL:CALL:150.00", Name: "AAPL CALL 150", AssetType: model.AssetTypeOption}
+	optAsset2 := model.Asset{Ticker: "AAPL:PUT:140.00", Name: "AAPL PUT 140", AssetType: model.AssetTypeOption}
+	db.Create(&optAsset1)
+	db.Create(&optAsset2)
+
+	optListing1 := model.Listing{AssetID: optAsset1.AssetID, ExchangeMIC: model.SimulatedExchangeMIC, Price: 5.0, Ask: 5.1, LastRefresh: time.Now()}
+	optListing2 := model.Listing{AssetID: optAsset2.AssetID, ExchangeMIC: model.SimulatedExchangeMIC, Price: 3.0, Ask: 3.1, LastRefresh: time.Now()}
+	db.Create(&optListing1)
+	db.Create(&optListing2)
+
+	opt1 := model.Option{AssetID: optAsset1.AssetID, StockID: 1, OptionType: model.OptionTypeCall, StrikePrice: 150.0, ContractSize: 100, SettlementDate: time.Now().AddDate(0, 1, 0)}
+	opt2 := model.Option{AssetID: optAsset2.AssetID, StockID: 1, OptionType: model.OptionTypePut, StrikePrice: 140.0, ContractSize: 100, SettlementDate: time.Now().AddDate(0, 1, 0)}
+	db.Create(&opt1)
+	db.Create(&opt2)
+
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	result, err := svc.GetOptions(context.Background(), dto.ListingQuery{Page: 1, PageSize: 10})
+	if err != nil {
+		t.Fatalf("GetOptions failed: %v", err)
+	}
+	if len(result.Data) != 2 {
+		t.Fatalf("expected 2 options, got %d", len(result.Data))
+	}
+}
+
+func TestGetOptions_InvalidSettlementDate_BadRequest(t *testing.T) {
+	db := setupListingTestDB(t)
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	_, err := svc.GetOptions(context.Background(), dto.ListingQuery{SettlementDate: "not-a-date"})
+	if err == nil {
+		t.Fatal("expected error for invalid settlement date")
+	}
+}
+
+// --- GetFutureDetails error path tests ---
+
+func TestGetFutureDetails_NotFound_WrongType(t *testing.T) {
+	db := setupListingTestDB(t)
+	seedListingTestData(t, db)
+
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	// Use ID=1 which is a stock, not a future
+	_, err := svc.GetFutureDetails(context.Background(), 1)
+	if err == nil {
+		t.Fatal("expected error when listing type is not future")
+	}
+}
+
+func TestGetFutureDetails_ListingNotFound(t *testing.T) {
+	db := setupListingTestDB(t)
+	seedListingTestData(t, db)
+
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	_, err := svc.GetFutureDetails(context.Background(), 99999)
+	if err == nil {
+		t.Fatal("expected error for nonexistent listing")
+	}
+}
+
+// --- GetForexDetails error path tests ---
+
+func TestGetForexDetails_NotFound_WrongType(t *testing.T) {
+	db := setupListingTestDB(t)
+	seedListingTestData(t, db)
+
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	// Use ID=1 which is a stock, not a forex pair
+	_, err := svc.GetForexDetails(context.Background(), 1)
+	if err == nil {
+		t.Fatal("expected error when listing type is not forexPair")
+	}
+}
+
+func TestGetForexDetails_ListingNotFound(t *testing.T) {
+	db := setupListingTestDB(t)
+	seedListingTestData(t, db)
+
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	_, err := svc.GetForexDetails(context.Background(), 99999)
+	if err == nil {
+		t.Fatal("expected error for nonexistent listing")
+	}
+}
+
+// --- GetOptionDetails error path tests ---
+
+func TestGetOptionDetails_NotFound_WrongType(t *testing.T) {
+	db := setupListingTestDB(t)
+	seedListingTestData(t, db)
+
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	// Use ID=1 which is a stock, not an option
+	_, err := svc.GetOptionDetails(context.Background(), 1)
+	if err == nil {
+		t.Fatal("expected error when listing type is not option")
+	}
+}
+
+func TestGetOptionDetails_ListingNotFound(t *testing.T) {
+	db := setupListingTestDB(t)
+	seedListingTestData(t, db)
+
+	svc := NewListingService(
+		repository.NewListingRepository(db),
+		repository.NewFuturesContractRepository(db),
+		repository.NewForexRepository(db),
+		repository.NewOptionRepository(db),
+	)
+
+	_, err := svc.GetOptionDetails(context.Background(), 99999)
+	if err == nil {
+		t.Fatal("expected error for nonexistent listing")
+	}
+}
+
+// --- latestDaily Tests ---
+
+func TestLatestDaily_EmptySlice(t *testing.T) {
+	result := latestDaily([]model.ListingDailyPriceInfo{})
+	if result != nil {
+		t.Fatal("expected nil for empty slice")
+	}
+}
+
+func TestLatestDaily_SingleElement(t *testing.T) {
+	now := time.Now()
+	infos := []model.ListingDailyPriceInfo{
+		{Date: now, Price: 100.0},
+	}
+	result := latestDaily(infos)
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if result.Price != 100.0 {
+		t.Errorf("expected price 100.0, got %f", result.Price)
+	}
+}
+
+func TestLatestDaily_MultipleElements_ReturnsLatest(t *testing.T) {
+	now := time.Now()
+	infos := []model.ListingDailyPriceInfo{
+		{Date: now.Add(-48 * time.Hour), Price: 90.0},
+		{Date: now, Price: 100.0},
+		{Date: now.Add(-24 * time.Hour), Price: 95.0},
+	}
+	result := latestDaily(infos)
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+	if result.Price != 100.0 {
+		t.Errorf("expected latest price 100.0, got %f", result.Price)
+	}
+}
+
+// --- mapHistory Tests ---
+
+func TestMapHistory_EmptySlice(t *testing.T) {
+	result := mapHistory([]model.ListingDailyPriceInfo{})
+	if len(result) != 0 {
+		t.Fatalf("expected empty slice, got %d", len(result))
+	}
+}
+
+func TestMapHistory_MapsAllFields(t *testing.T) {
+	now := time.Now()
+	infos := []model.ListingDailyPriceInfo{
+		{Date: now, Price: 100.0, Ask: 101.0, Bid: 99.0, Change: 1.5, Volume: 500},
+	}
+	result := mapHistory(infos)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 element, got %d", len(result))
+	}
+	r := result[0]
+	if r.Price != 100.0 || r.Ask != 101.0 || r.Bid != 99.0 || r.Change != 1.5 || r.Volume != 500 {
+		t.Errorf("mapHistory fields not mapped correctly: %+v", r)
+	}
+}
+
 func TestGetOptionDetails_Success(t *testing.T) {
 	db := setupListingTestDB(t)
 	seedListingTestData(t, db)
 
-	// Moramo da ubacimo mock opciju jer je nema u globalnom seed-u
+	optionAsset := model.Asset{
+		Ticker: "AAPL220404P00180000", Name: "AAPL Put", AssetType: model.AssetTypeOption,
+	}
+	db.Create(&optionAsset)
+
 	optionListing := model.Listing{
-		Ticker: "AAPL220404P00180000", Name: "AAPL Put", ExchangeMIC: "XNAS",
-		Price: 3.20, Ask: 3.30, ListingType: model.ListingTypeOption, LastRefresh: time.Now(),
+		AssetID: optionAsset.AssetID, ExchangeMIC: "XNAS",
+		Price: 3.20, Ask: 3.30, LastRefresh: time.Now(),
 	}
 	db.Create(&optionListing)
 
 	option := model.Option{
-		ListingID: optionListing.ListingID, StockID: 1, OptionType: model.OptionTypePut,
+		AssetID: optionAsset.AssetID, StockID: 1, OptionType: model.OptionTypePut,
 		StrikePrice: 180.0, ContractSize: 100, SettlementDate: time.Now().AddDate(0, 1, 0),
 	}
 	db.Create(&option)

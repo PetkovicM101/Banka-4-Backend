@@ -1,29 +1,32 @@
 package service
 
 import (
+	"fmt"
 	"context"
-	"time"
 
 	pkgerrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/repository"
 )
 
 type PortfolioService struct {
-	ownershipRepo repository.OrderOwnershipRepository
+	ownershipRepo repository.AssetOwnershipRepository
 	stockRepo     repository.StockRepository
 	optionRepo    repository.OptionRepository
 	futuresRepo   repository.FuturesContractRepository
 	forexRepo     repository.ForexRepository
+	bankingClient client.BankingClient
 }
 
 func NewPortfolioService(
-	ownershipRepo repository.OrderOwnershipRepository,
+	ownershipRepo repository.AssetOwnershipRepository,
 	stockRepo repository.StockRepository,
 	optionRepo repository.OptionRepository,
 	futuresRepo repository.FuturesContractRepository,
 	forexRepo repository.ForexRepository,
+	bankingClient client.BankingClient,
 ) *PortfolioService {
 	return &PortfolioService{
 		ownershipRepo: ownershipRepo,
@@ -31,6 +34,7 @@ func NewPortfolioService(
 		optionRepo:    optionRepo,
 		futuresRepo:   futuresRepo,
 		forexRepo:     forexRepo,
+		bankingClient: bankingClient,
 	}
 }
 
@@ -40,147 +44,115 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 		return nil, pkgerrors.InternalErr(err)
 	}
 
-	type aggregated struct {
-		ticker        string
-		netAmount     float64
-		totalBuyQty   float64
-		totalBuyValue float64
-		lastModified  time.Time
-		currentPrice  float64
-	}
-
-	byListing := make(map[uint]*aggregated)
-
-	for _, own := range ownerships {
-		ord := own.Order
-		if ord.Status != model.OrderStatusApproved {
-			continue
-		}
-		if ord.FilledQty == 0 || ord.PricePerUnit == nil {
-			continue
-		}
-
-		contractSize := ord.ContractSize
-		if contractSize <= 0 {
-			contractSize = 1
-		}
-		filledF := float64(ord.FilledQty) * contractSize
-		listingID := ord.ListingID
-
-		agg, exists := byListing[listingID]
-		if !exists {
-			agg = &aggregated{
-				ticker:       ord.Listing.Ticker,
-				currentPrice: ord.Listing.Price,
-			}
-			byListing[listingID] = agg
-		}
-
-		if ord.UpdatedAt.After(agg.lastModified) {
-			agg.lastModified = ord.UpdatedAt
-		}
-
-		switch ord.Direction {
-		case model.OrderDirectionBuy:
-			agg.netAmount += filledF
-			agg.totalBuyQty += filledF
-			agg.totalBuyValue += (*ord.PricePerUnit) * filledF
-		case model.OrderDirectionSell:
-			agg.netAmount -= filledF
+	// Filter to positive positions and collect asset IDs
+	var active []model.AssetOwnership
+	var assetIDs []uint
+	for _, o := range ownerships {
+		if o.Amount > 0 {
+			active = append(active, o)
+			assetIDs = append(assetIDs, o.AssetID)
 		}
 	}
 
-	var listingIDs []uint
-	for id, agg := range byListing {
-		if agg.netAmount > 0 {
-			listingIDs = append(listingIDs, id)
-		}
-	}
-
-	if len(listingIDs) == 0 {
+	if len(active) == 0 {
 		return []dto.PortfolioAssetResponse{}, nil
 	}
 
+	// Determine asset types; listing is preloaded on each asset type
 	type assetMeta struct {
 		assetType         dto.AssetType
 		outstandingShares *float64
+		listing           *model.Listing
 	}
 	meta := make(map[uint]assetMeta)
 
-	// Updated repo calls to include ctx
-	stocks, err := s.stockRepo.FindByListingIDs(ctx, listingIDs)
+	stocks, err := s.stockRepo.FindByAssetIDs(ctx, assetIDs)
 	if err != nil {
 		return nil, pkgerrors.InternalErr(err)
 	}
 	for _, st := range stocks {
 		shares := st.OutstandingShares
-		meta[st.ListingID] = assetMeta{
+		meta[st.AssetID] = assetMeta{
 			assetType:         dto.AssetTypeStock,
 			outstandingShares: &shares,
+			listing:           st.Listing,
 		}
 	}
 
-	options, err := s.optionRepo.FindByListingIDs(ctx, listingIDs)
+	options, err := s.optionRepo.FindByAssetIDs(ctx, assetIDs)
 	if err != nil {
 		return nil, pkgerrors.InternalErr(err)
 	}
 	for _, op := range options {
-		meta[op.ListingID] = assetMeta{assetType: dto.AssetTypeOption}
+		meta[op.AssetID] = assetMeta{assetType: dto.AssetTypeOption, listing: op.Listing}
 	}
 
-	futures, err := s.futuresRepo.FindByListingIDs(ctx, listingIDs)
+	futures, err := s.futuresRepo.FindByAssetIDs(ctx, assetIDs)
 	if err != nil {
 		return nil, pkgerrors.InternalErr(err)
 	}
 	for _, fc := range futures {
-		meta[fc.ListingID] = assetMeta{assetType: dto.AssetTypeFutures}
+		meta[fc.AssetID] = assetMeta{assetType: dto.AssetTypeFutures, listing: fc.Listing}
 	}
 
-	forexPairs, err := s.forexRepo.FindByListingIDs(ctx, listingIDs)
+	forexPairs, err := s.forexRepo.FindByAssetIDs(ctx, assetIDs)
 	if err != nil {
 		return nil, pkgerrors.InternalErr(err)
 	}
 	for _, fp := range forexPairs {
-		meta[fp.ListingID] = assetMeta{assetType: dto.AssetTypeForex}
+		meta[fp.AssetID] = assetMeta{assetType: dto.AssetTypeForex, listing: fp.Listing}
 	}
 
 	var result []dto.PortfolioAssetResponse
 
-	for id, agg := range byListing {
-		if agg.netAmount <= 0 {
-			continue
-		}
-		m, known := meta[id]
+	for _, o := range active {
+		m, known := meta[o.AssetID]
 		if !known {
 			continue
 		}
 
-		var avgBuyPrice float64
-		if agg.totalBuyQty > 0 {
-			avgBuyPrice = agg.totalBuyValue / agg.totalBuyQty
+		currentPrice := 0.0
+		if m.listing != nil {
+			currentPrice = m.listing.Price
 		}
 
-		const taxRate = 0.15
-		// TODO: calculate TaxAmount
+		if m.listing == nil || m.listing.Exchange == nil || m.listing.Exchange.Currency == "" {
+			return nil, pkgerrors.InternalErr(fmt.Errorf("user listing does not have valid exchange/currency code"))
+		}
 
-		profit := (agg.currentPrice - avgBuyPrice) * agg.netAmount
+		currency := m.listing.Exchange.Currency
 
-		tax := 0.0
-		if profit > 0 {
-			tax = profit * taxRate
+		// Convert current price to RSD for consistent profit calculation
+		currentPriceRSD, err := s.toRSD(ctx, currentPrice, currency)
+		if err != nil {
+			return nil, pkgerrors.InternalErr(err)
+		}
+
+		profit := (currentPriceRSD - o.AvgBuyPriceRSD) * o.Amount
+
+		var ticker string
+		if o.Asset.Ticker != "" {
+			ticker = o.Asset.Ticker
 		}
 
 		result = append(result, dto.PortfolioAssetResponse{
 			Type:              m.assetType,
-			Ticker:            agg.ticker,
-			Amount:            agg.netAmount,
-			PricePerUnit:      agg.currentPrice,
-			LastModified:      agg.lastModified,
+			Ticker:            ticker,
+			Amount:            o.Amount,
+			PricePerUnitRSD:   currentPriceRSD,
+			AvgBuyPriceRSD:    o.AvgBuyPriceRSD,
+			LastModified:      o.UpdatedAt,
 			Profit:            profit,
-			TaxAmount:         tax,
 			OutstandingShares: m.outstandingShares,
 		})
 	}
 
 	return result, nil
+}
+
+func (s *PortfolioService) toRSD(ctx context.Context, amount float64, currency string) (float64, error) {
+	if currency == "RSD" {
+		return amount, nil
+	}
+	return s.bankingClient.ConvertCurrency(ctx, amount, currency, "RSD")
 }
