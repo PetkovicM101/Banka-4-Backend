@@ -135,8 +135,8 @@ func (s *ListingService) GetStocks(ctx context.Context, q dto.ListingQuery) (*dt
 		PageSize: q.PageSize,
 	}, nil
 }
-func (s *ListingService) GetStockDetails(ctx context.Context, listingID uint) (*dto.StockDetailedResponse, error) {
-	l, err := s.listingRepo.FindByID(ctx, listingID)
+func (s *ListingService) GetStockDetails(ctx context.Context, listingID uint, minutesBack int) (*dto.StockDetailedResponse, error) {
+	l, err := s.listingRepo.FindByID(ctx, listingID, minutesBack)
 	if err != nil {
 		return nil, commonErrors.InternalErr(err)
 	}
@@ -237,8 +237,8 @@ func (s *ListingService) GetFutures(ctx context.Context, q dto.ListingQuery) (*d
 	}, nil
 }
 
-func (s *ListingService) GetFutureDetails(ctx context.Context, listingID uint) (*dto.FutureDetailedResponse, error) {
-	l, err := s.listingRepo.FindByID(ctx, listingID)
+func (s *ListingService) GetFutureDetails(ctx context.Context, listingID uint, minutesBack int) (*dto.FutureDetailedResponse, error) {
+	l, err := s.listingRepo.FindByID(ctx, listingID, minutesBack)
 	if err != nil || l == nil || l.ListingType != model.ListingTypeFuture {
 		return nil, commonErrors.NotFoundErr("future not found")
 	}
@@ -298,8 +298,8 @@ func (s *ListingService) GetForex(ctx context.Context, q dto.ListingQuery) (*dto
 	}, nil
 }
 
-func (s *ListingService) GetForexDetails(ctx context.Context, listingID uint) (*dto.ForexDetailedResponse, error) {
-	l, err := s.listingRepo.FindByID(ctx, listingID)
+func (s *ListingService) GetForexDetails(ctx context.Context, listingID uint, minutesBack int) (*dto.ForexDetailedResponse, error) {
+	l, err := s.listingRepo.FindByID(ctx, listingID, minutesBack)
 	if err != nil || l == nil || l.ListingType != model.ListingTypeForexPair {
 		return nil, commonErrors.NotFoundErr("forex not found")
 	}
@@ -372,8 +372,8 @@ func (s *ListingService) GetOptions(ctx context.Context, q dto.ListingQuery) (*d
 	return result, nil
 }
 
-func (s *ListingService) GetOptionDetails(ctx context.Context, listingID uint) (*dto.OptionDetailedResponse, error) {
-	l, err := s.listingRepo.FindByID(ctx, listingID)
+func (s *ListingService) GetOptionDetails(ctx context.Context, listingID uint, minutesBack int) (*dto.OptionDetailedResponse, error) {
+	l, err := s.listingRepo.FindByID(ctx, listingID, minutesBack)
 	if err != nil || l == nil || l.ListingType != model.ListingTypeOption {
 		return nil, commonErrors.NotFoundErr("option not found")
 	}
