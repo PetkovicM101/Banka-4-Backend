@@ -43,7 +43,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.TaxInfoResponse"
+                            "$ref": "#/definitions/dto.TaxInfoResponse"
                         }
                     },
                     "400": {
@@ -97,7 +97,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PortfolioAssetResponse"
+                                "$ref": "#/definitions/dto.PortfolioAssetResponse"
                             }
                         }
                     },
@@ -156,7 +156,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PortfolioProfitResponse"
+                            "$ref": "#/definitions/dto.PortfolioProfitResponse"
                         }
                     },
                     "400": {
@@ -214,7 +214,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.TaxInfoResponse"
+                            "$ref": "#/definitions/dto.TaxInfoResponse"
                         }
                     },
                     "400": {
@@ -268,7 +268,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PortfolioAssetResponse"
+                                "$ref": "#/definitions/dto.PortfolioAssetResponse"
                             }
                         }
                     },
@@ -327,7 +327,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PortfolioProfitResponse"
+                            "$ref": "#/definitions/dto.PortfolioProfitResponse"
                         }
                     },
                     "400": {
@@ -433,7 +433,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ExchangeResponse"
+                            "$ref": "#/definitions/dto.ExchangeResponse"
                         }
                     },
                     "404": {
@@ -531,7 +531,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedForexResponse"
+                            "$ref": "#/definitions/dto.PaginatedForexResponse"
                         }
                     },
                     "400": {
@@ -571,8 +571,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "History range in minutes (e.g. 1440 for 1 day)",
-                        "name": "minutes",
+                        "description": "History range in days",
+                        "name": "days",
                         "in": "query"
                     }
                 ],
@@ -580,7 +580,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ForexDetailedResponse"
+                            "$ref": "#/definitions/dto.ForexDetailedResponse"
                         }
                     },
                     "400": {
@@ -709,7 +709,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedFuturesResponse"
+                            "$ref": "#/definitions/dto.PaginatedFuturesResponse"
                         }
                     },
                     "400": {
@@ -749,8 +749,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "History range in minutes (e.g. 1440 for 1 day)",
-                        "name": "minutes",
+                        "description": "History range in days",
+                        "name": "days",
                         "in": "query"
                     }
                 ],
@@ -758,7 +758,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.FutureDetailedResponse"
+                            "$ref": "#/definitions/dto.FutureDetailedResponse"
                         }
                     },
                     "400": {
@@ -887,7 +887,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedOptionResponse"
+                            "$ref": "#/definitions/dto.PaginatedOptionResponse"
                         }
                     },
                     "400": {
@@ -927,8 +927,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "History range in minutes (e.g. 1440 for 1 day)",
-                        "name": "minutes",
+                        "description": "History range in days",
+                        "name": "days",
                         "in": "query"
                     }
                 ],
@@ -936,7 +936,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OptionDetailedResponse"
+                            "$ref": "#/definitions/dto.OptionDetailedResponse"
                         }
                     },
                     "400": {
@@ -988,8 +988,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "History range in minutes (e.g. 1440 for 1 day)",
-                        "name": "minutes",
+                        "description": "History range in days",
+                        "name": "days_back",
                         "in": "query"
                     }
                 ],
@@ -997,7 +997,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.StockDetailedResponse"
+                            "$ref": "#/definitions/dto.StockDetailedResponse"
                         }
                     },
                     "400": {
@@ -1120,7 +1120,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedStockResponse"
+                            "$ref": "#/definitions/dto.PaginatedStockResponse"
                         }
                     },
                     "400": {
@@ -1178,7 +1178,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ListOrdersResponse"
+                            "$ref": "#/definitions/dto.ListOrdersResponse"
                         }
                     },
                     "400": {
@@ -1214,7 +1214,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.CreateOrderRequest"
+                            "$ref": "#/definitions/dto.CreateOrderRequest"
                         }
                     }
                 ],
@@ -1222,7 +1222,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OrderResponse"
+                            "$ref": "#/definitions/dto.OrderResponse"
                         }
                     },
                     "400": {
@@ -1263,7 +1263,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OrderResponse"
+                            "$ref": "#/definitions/dto.OrderResponse"
                         }
                     },
                     "400": {
@@ -1304,7 +1304,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OrderResponse"
+                            "$ref": "#/definitions/dto.OrderResponse"
                         }
                     },
                     "400": {
@@ -1345,7 +1345,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OrderResponse"
+                            "$ref": "#/definitions/dto.OrderResponse"
                         }
                     },
                     "400": {
@@ -1382,7 +1382,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.CollectTaxesResponse"
+                            "$ref": "#/definitions/dto.CollectTaxesResponse"
                         }
                     },
                     "401": {
@@ -1454,7 +1454,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ListTaxUsersResponse"
+                            "$ref": "#/definitions/dto.ListTaxUsersResponse"
                         }
                     },
                     "400": {
@@ -1480,21 +1480,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "errors.AppError": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.AssetType": {
+        "dto.AssetType": {
             "type": "string",
             "enum": [
                 "STOCK",
@@ -1509,7 +1495,7 @@ const docTemplate = `{
                 "AssetTypeForex"
             ]
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.CollectTaxesResponse": {
+        "dto.CollectTaxesResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1517,7 +1503,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.CreateOrderRequest": {
+        "dto.CreateOrderRequest": {
             "type": "object",
             "required": [
                 "account_number",
@@ -1540,7 +1526,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderDirection"
+                            "$ref": "#/definitions/model.OrderDirection"
                         }
                     ]
                 },
@@ -1562,7 +1548,7 @@ const docTemplate = `{
                     ],
                     "allOf": [
                         {
-                            "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderType"
+                            "$ref": "#/definitions/model.OrderType"
                         }
                     ]
                 },
@@ -1575,7 +1561,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.DailyPriceResponse": {
+        "dto.DailyPriceResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -1598,7 +1584,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ExchangeResponse": {
+        "dto.ExchangeResponse": {
             "type": "object",
             "properties": {
                 "acronym": {
@@ -1633,7 +1619,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ForexDetailedResponse": {
+        "dto.ForexDetailedResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -1654,7 +1640,7 @@ const docTemplate = `{
                 "history": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.DailyPriceResponse"
+                        "$ref": "#/definitions/dto.DailyPriceResponse"
                     }
                 },
                 "initial_margin_cost": {
@@ -1689,7 +1675,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ForexResponse": {
+        "dto.ForexResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -1739,7 +1725,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.FutureDetailedResponse": {
+        "dto.FutureDetailedResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -1763,7 +1749,7 @@ const docTemplate = `{
                 "history": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.DailyPriceResponse"
+                        "$ref": "#/definitions/dto.DailyPriceResponse"
                     }
                 },
                 "initial_margin_cost": {
@@ -1792,7 +1778,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.FuturesResponse": {
+        "dto.FuturesResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -1839,13 +1825,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ListOrdersResponse": {
+        "dto.ListOrdersResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OrderSummaryResponse"
+                        "$ref": "#/definitions/dto.OrderSummaryResponse"
                     }
                 },
                 "page": {
@@ -1859,13 +1845,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ListTaxUsersResponse": {
+        "dto.ListTaxUsersResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.UserTaxEntry"
+                        "$ref": "#/definitions/dto.UserTaxEntry"
                     }
                 },
                 "page": {
@@ -1882,7 +1868,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OptionDetailedResponse": {
+        "dto.OptionDetailedResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -1900,7 +1886,7 @@ const docTemplate = `{
                 "history": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.DailyPriceResponse"
+                        "$ref": "#/definitions/dto.DailyPriceResponse"
                     }
                 },
                 "implied_volatility": {
@@ -1941,7 +1927,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OptionResponse": {
+        "dto.OptionResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -1994,7 +1980,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OrderResponse": {
+        "dto.OrderResponse": {
             "type": "object",
             "properties": {
                 "account_number": {
@@ -2016,7 +2002,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "direction": {
-                    "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderDirection"
+                    "$ref": "#/definitions/model.OrderDirection"
                 },
                 "is_done": {
                     "type": "boolean"
@@ -2037,7 +2023,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "order_type": {
-                    "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderType"
+                    "$ref": "#/definitions/model.OrderType"
                 },
                 "price_per_unit": {
                     "type": "number"
@@ -2049,7 +2035,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderStatus"
+                    "$ref": "#/definitions/model.OrderStatus"
                 },
                 "stop_value": {
                     "type": "number"
@@ -2065,14 +2051,14 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OrderSummaryResponse": {
+        "dto.OrderSummaryResponse": {
             "type": "object",
             "properties": {
                 "contract_size": {
                     "type": "number"
                 },
                 "direction": {
-                    "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderDirection"
+                    "$ref": "#/definitions/model.OrderDirection"
                 },
                 "listing_name": {
                     "type": "string"
@@ -2090,20 +2076,20 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderStatus"
+                    "$ref": "#/definitions/model.OrderStatus"
                 },
                 "user_id": {
                     "type": "integer"
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedForexResponse": {
+        "dto.PaginatedForexResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.ForexResponse"
+                        "$ref": "#/definitions/dto.ForexResponse"
                     }
                 },
                 "page": {
@@ -2117,13 +2103,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedFuturesResponse": {
+        "dto.PaginatedFuturesResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.FuturesResponse"
+                        "$ref": "#/definitions/dto.FuturesResponse"
                     }
                 },
                 "page": {
@@ -2137,13 +2123,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedOptionResponse": {
+        "dto.PaginatedOptionResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OptionResponse"
+                        "$ref": "#/definitions/dto.OptionResponse"
                     }
                 },
                 "page": {
@@ -2157,13 +2143,13 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PaginatedStockResponse": {
+        "dto.PaginatedStockResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.StockResponse"
+                        "$ref": "#/definitions/dto.StockResponse"
                     }
                 },
                 "page": {
@@ -2177,7 +2163,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PortfolioAssetResponse": {
+        "dto.PortfolioAssetResponse": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -2202,11 +2188,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.AssetType"
+                    "$ref": "#/definitions/dto.AssetType"
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.PortfolioProfitResponse": {
+        "dto.PortfolioProfitResponse": {
             "type": "object",
             "properties": {
                 "totalProfit": {
@@ -2214,7 +2200,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.StockDetailedResponse": {
+        "dto.StockDetailedResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -2235,7 +2221,7 @@ const docTemplate = `{
                 "history": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.DailyPriceResponse"
+                        "$ref": "#/definitions/dto.DailyPriceResponse"
                     }
                 },
                 "initial_margin_cost": {
@@ -2253,7 +2239,7 @@ const docTemplate = `{
                 "options": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.OptionResponse"
+                        "$ref": "#/definitions/dto.OptionResponse"
                     }
                 },
                 "outstanding_shares": {
@@ -2270,7 +2256,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.StockResponse": {
+        "dto.StockResponse": {
             "type": "object",
             "properties": {
                 "ask": {
@@ -2314,7 +2300,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.TaxInfoResponse": {
+        "dto.TaxInfoResponse": {
             "type": "object",
             "properties": {
                 "totalTax": {
@@ -2322,7 +2308,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_dto.UserTaxEntry": {
+        "dto.UserTaxEntry": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2345,7 +2331,21 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderDirection": {
+        "errors.AppError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.OrderDirection": {
             "type": "string",
             "enum": [
                 "BUY",
@@ -2356,7 +2356,7 @@ const docTemplate = `{
                 "OrderDirectionSell"
             ]
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderStatus": {
+        "model.OrderStatus": {
             "type": "string",
             "enum": [
                 "PENDING",
@@ -2369,7 +2369,7 @@ const docTemplate = `{
                 "OrderStatusDeclined"
             ]
         },
-        "github_com_RAF-SI-2025_Banka-4-Backend_services_trading-service_internal_model.OrderType": {
+        "model.OrderType": {
             "type": "string",
             "enum": [
                 "MARKET",
@@ -2384,17 +2384,25 @@ const docTemplate = `{
                 "OrderTypeStopLimit"
             ]
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "JWT Authorization header using the Bearer scheme.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "Trading Service API",
+	Description:      "API for managing portfolios, executing trades, and handling financial market operations.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
