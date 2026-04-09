@@ -19,6 +19,9 @@ type ListingQuery struct {
 	Page           int     `form:"page"`
 	PageSize       int     `form:"page_size"`
 }
+type ListingDetailsQuery struct {
+	Minutes int `form:"minutes" binding:"omitempty,min=0" example:"1440"`
+}
 
 func (q *ListingQuery) Normalize() {
 	if q.Page <= 0 {
