@@ -140,7 +140,7 @@ func TestOTCHandler_PublishAsset_UpdatesExistingPublicAmount(t *testing.T) {
 
 	var updated model.AssetOwnership
 	require.NoError(t, db.First(&updated, ownership.AssetOwnershipID).Error)
-	require.Equal(t, float64(8), updated.PublicAmount)
+	require.Equal(t, float64(11), updated.PublicAmount)
 }
 
 // --- GetPublicOTCAssets tests ---

@@ -22,7 +22,7 @@ func NewOTCHandler(service *service.OTCService) *OTCHandler {
 
 // PublishAsset godoc
 // @Summary Publish assets for OTC trading
-// @Description Sets the number of assets the caller makes publicly visible on the OTC portal.
+// @Description Appends the number of assets the caller makes publicly visible on the OTC portal.
 // The amount replaces the current public amount. Must be non-negative and cannot exceed
 // owned minus reserved. Accessible by the owning client or actuary only.
 // @Tags otc

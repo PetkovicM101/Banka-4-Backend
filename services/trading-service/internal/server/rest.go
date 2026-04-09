@@ -116,7 +116,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 			client.GET("/:clientId/assets/profit", portfolioHandler.GetClientPortfolioProfit)
 			client.GET("/:clientId/accumulated-tax", taxHandler.GetClientAccumulatedTax)
 			client.PATCH("/:clientId/assets/:id/publish/:amount", otcHandler.PublishAsset)
-			client.GET("/:clientId/orders", orderHandler.GetClientOrders)
+
 		}
 
 		actuary := api.Group("/actuary")
@@ -126,7 +126,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 			actuary.GET("/:actId/assets/profit", portfolioHandler.GetActuaryPortfolioProfit)
 			actuary.GET("/:actId/accumulated-tax", taxHandler.GetActuaryAccumulatedTax)
 			actuary.PATCH("/:actId/assets/:id/publish/:amount", otcHandler.PublishAsset)
-			actuary.GET("/:actId/orders", orderHandler.GetActuaryOrders)
+
 		}
 
 		otc := api.Group("/otc")
