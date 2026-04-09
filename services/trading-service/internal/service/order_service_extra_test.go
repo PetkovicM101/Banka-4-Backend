@@ -381,7 +381,15 @@ func TestProcessOrder_MarketSell_WithCommission(t *testing.T) {
 			DestinationCurrencyCode: "USD",
 		},
 	}
-	svc := newTestOrderService(orderRepo, txRepo, exchangeRepo, listingRepo, &fakeUserServiceClient{}, bankingClient)
+	ownershipRepo := &fakeAssetOwnershipRepo{
+		ownerships: []model.AssetOwnership{
+			{AssetID: listing.AssetID, Amount: 10},
+		},
+	}
+	svc := NewOrderService(orderRepo, txRepo, exchangeRepo, listingRepo, ownershipRepo, &fakeUserServiceClient{}, bankingClient)
+	svc.now = func() time.Time {
+		return time.Date(2025, 6, 4, 10, 0, 0, 0, time.UTC)
+	}
 
 	order := &model.Order{
 		OrderID:          1,

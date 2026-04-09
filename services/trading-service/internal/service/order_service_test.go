@@ -374,14 +374,23 @@ func TestCreateOrder_LimitSell_Success(t *testing.T) {
 	exchange := defaultExchange()
 	limitVal := 155.0
 
-	svc := newTestOrderService(
+	ownershipRepo := &fakeAssetOwnershipRepo{
+		ownerships: []model.AssetOwnership{
+			{AssetID: listing.AssetID, Amount: 10},
+		},
+	}
+	svc := NewOrderService(
 		&fakeOrderRepo{},
 		&fakeOrderTransactionRepo{},
 		&fakeExchangeRepo{exchange: exchange},
 		&fakeListingRepo{listing: listing},
+		ownershipRepo,
 		&fakeUserServiceClient{},
 		&fakeOrderBankingClient{accountResp: defaultAccountResp(10)},
 	)
+	svc.now = func() time.Time {
+		return time.Date(2025, 6, 4, 10, 0, 0, 0, time.UTC)
+	}
 
 	ctx := clientAuthCtx()
 	req := dto.CreateOrderRequest{
