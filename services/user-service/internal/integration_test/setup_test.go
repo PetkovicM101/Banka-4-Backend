@@ -7,10 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -34,24 +35,12 @@ import (
 	"gorm.io/gorm"
 )
 
-var testSetupOnce sync.Once
+var sharedDB *gorm.DB
 var uniqueCounter atomic.Uint64
 
-func init() {
-	testSetupOnce.Do(func() {
-		gin.SetMode(gin.TestMode)
-		_ = logging.Init("test")
-	})
-}
-
-type fakeMailer struct{}
-
-func (f *fakeMailer) Send(_, _, _ string) error {
-	return nil
-}
-
-func setupTestDB(t *testing.T) *gorm.DB {
-	t.Helper()
+func TestMain(m *testing.M) {
+	gin.SetMode(gin.TestMode)
+	_ = logging.Init("test")
 
 	ctx := context.Background()
 	container, err := tcpostgres.Run(
@@ -62,37 +51,19 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		tcpostgres.WithPassword("postgres"),
 		tcpostgres.BasicWaitStrategies(),
 	)
-
 	if err != nil {
-		t.Fatalf("start postgres container: %v", err)
+		log.Fatalf("start postgres container: %v", err)
 	}
-
-	t.Cleanup(func() {
-		if err := container.Terminate(context.Background()); err != nil {
-			t.Fatalf("terminate postgres container: %v", err)
-		}
-	})
 
 	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
-		t.Fatalf("build postgres connection string: %v", err)
+		log.Fatalf("build postgres connection string: %v", err)
 	}
 
 	db, err := gorm.Open(gormpostgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		t.Fatalf("open gorm db: %v", err)
+		log.Fatalf("open gorm db: %v", err)
 	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		t.Fatalf("get sql db: %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := sqlDB.Close(); err != nil {
-			t.Fatalf("close sql db: %v", err)
-		}
-	})
 
 	if err := db.AutoMigrate(
 		&model.Identity{},
@@ -106,10 +77,38 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		&model.EmployeePermission{},
 		&model.ClientPermission{},
 	); err != nil {
-		t.Fatalf("auto migrate test schema: %v", err)
+		log.Fatalf("auto migrate test schema: %v", err)
 	}
 
-	return db
+	sharedDB = db
+	code := m.Run()
+
+	sqlDB, _ := db.DB()
+	_ = sqlDB.Close()
+	_ = container.Terminate(ctx)
+
+	os.Exit(code)
+}
+
+type fakeMailer struct{}
+
+func (f *fakeMailer) Send(_, _, _ string) error {
+	return nil
+}
+
+func setupTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+
+	tx := sharedDB.Begin()
+	if tx.Error != nil {
+		t.Fatalf("begin transaction: %v", tx.Error)
+	}
+
+	t.Cleanup(func() {
+		tx.Rollback()
+	})
+
+	return tx
 }
 
 func setupTestRouter(t *testing.T, db *gorm.DB) *gin.Engine {
