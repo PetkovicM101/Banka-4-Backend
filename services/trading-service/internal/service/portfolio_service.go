@@ -3,9 +3,14 @@ package service
 import (
 	"context"
 	"fmt"
-	"log"
+	"math"
+	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pkgerrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
+	pb "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
@@ -19,6 +24,7 @@ type PortfolioService struct {
 	futuresRepo   repository.FuturesContractRepository
 	forexRepo     repository.ForexRepository
 	bankingClient client.BankingClient
+	now           func() time.Time
 	userClient    client.UserServiceClient
 }
 
@@ -38,6 +44,7 @@ func NewPortfolioService(
 		futuresRepo:   futuresRepo,
 		forexRepo:     forexRepo,
 		bankingClient: bankingClient,
+		now:           time.Now,
 		userClient:    userClient,
 	}
 }
@@ -73,7 +80,6 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 			assetIDs = append(assetIDs, o.AssetID)
 		}
 	}
-	log.Printf("Found %d active asset ownerships for identity %d (owner type %s)", len(active), identityID, ownerType) // Debug log
 
 	if len(active) == 0 {
 		return []dto.PortfolioAssetResponse{}, nil
@@ -157,6 +163,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 		}
 
 		result = append(result, dto.PortfolioAssetResponse{
+			AssetID:           o.AssetID,
 			Type:              m.assetType,
 			Ticker:            ticker,
 			Amount:            o.Amount,
@@ -176,4 +183,177 @@ func (s *PortfolioService) toRSD(ctx context.Context, amount float64, currency s
 		return amount, nil
 	}
 	return s.bankingClient.ConvertCurrency(ctx, amount, currency, "RSD")
+}
+
+func (s *PortfolioService) ExerciseOption(ctx context.Context, identityID uint, ownerType model.OwnerType, optionAssetID uint, accountNumber string) (*dto.ExerciseOptionResponse, error) {
+	if ownerType != model.OwnerTypeActuary {
+		return nil, pkgerrors.ForbiddenErr("only actuaries can exercise options")
+	}
+
+	account, err := s.bankingClient.GetAccountByNumber(ctx, accountNumber)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			return nil, pkgerrors.NotFoundErr("account not found")
+		}
+		return nil, pkgerrors.ServiceUnavailableErr(err)
+	}
+	if account.AccountType != "Bank" {
+		return nil, pkgerrors.BadRequestErr("employees must use a bank account")
+	}
+
+	ownerships, err := s.ownershipRepo.FindByIdentity(ctx, identityID, ownerType)
+	if err != nil {
+		return nil, pkgerrors.InternalErr(err)
+	}
+
+	optionOwnership := findOwnershipByAssetID(ownerships, optionAssetID)
+	if optionOwnership == nil || optionOwnership.Amount <= 0 {
+		return nil, pkgerrors.NotFoundErr("option ownership not found")
+	}
+
+	options, err := s.optionRepo.FindByAssetIDs(ctx, []uint{optionAssetID})
+	if err != nil {
+		return nil, pkgerrors.InternalErr(err)
+	}
+	if len(options) == 0 {
+		return nil, pkgerrors.NotFoundErr("option not found")
+	}
+
+	option := options[0]
+	if option.OptionType != model.OptionTypeCall {
+		return nil, pkgerrors.BadRequestErr("only call options can be exercised")
+	}
+
+	if !option.SettlementDate.After(s.now()) {
+		return nil, pkgerrors.BadRequestErr("cannot exercise an expired option")
+	}
+
+	if option.ContractSize <= 0 {
+		return nil, pkgerrors.InternalErr(fmt.Errorf("option contract size must be positive"))
+	}
+
+	if option.Stock.AssetID == 0 || option.Stock.Listing == nil {
+		return nil, pkgerrors.InternalErr(fmt.Errorf("underlying stock listing is not available"))
+	}
+
+	if option.Stock.Listing.Price <= option.StrikePrice {
+		return nil, pkgerrors.BadRequestErr("option is not in the money")
+	}
+
+	heldContracts, err := exercisedContracts(optionOwnership.Amount, option.ContractSize)
+	if err != nil {
+		return nil, pkgerrors.BadRequestErr(err.Error())
+	}
+	exercisedContracts := uint(1)
+
+	purchasedShares := float64(option.ContractSize)
+	remainingShares := optionOwnership.Amount - purchasedShares
+	totalCost := purchasedShares * option.StrikePrice
+
+	stockCurrency, err := listingCurrency(option.Stock.Listing, option.Listing)
+	if err != nil {
+		return nil, pkgerrors.InternalErr(err)
+	}
+
+	settlement, err := s.bankingClient.ExecuteTradeSettlement(
+		ctx,
+		accountNumber,
+		stockCurrency,
+		pb.TradeSettlementDirection_TRADE_SETTLEMENT_DIRECTION_BUY,
+		totalCost,
+	)
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok {
+			switch st.Code() {
+			case codes.NotFound:
+				return nil, pkgerrors.NotFoundErr(st.Message())
+			case codes.FailedPrecondition:
+				return nil, pkgerrors.BadRequestErr(st.Message())
+			}
+		}
+		return nil, pkgerrors.ServiceUnavailableErr(err)
+	}
+
+	strikePriceRSD, err := s.toRSD(ctx, option.StrikePrice, stockCurrency)
+	if err != nil {
+		return nil, pkgerrors.InternalErr(err)
+	}
+
+	stockOwnership := findOwnershipByAssetID(ownerships, option.Stock.AssetID)
+	if stockOwnership == nil {
+		stockOwnership = &model.AssetOwnership{
+			IdentityID: identityID,
+			OwnerType:  ownerType,
+			AssetID:    option.Stock.AssetID,
+		}
+	}
+
+	newStockAmount := stockOwnership.Amount + purchasedShares
+	if newStockAmount > 0 {
+		stockOwnership.AvgBuyPriceRSD = (stockOwnership.AvgBuyPriceRSD*stockOwnership.Amount + strikePriceRSD*purchasedShares) / newStockAmount
+	}
+	stockOwnership.Amount = newStockAmount
+	stockOwnership.UpdatedAt = s.now()
+
+	optionOwnership.Amount = remainingShares
+	optionOwnership.UpdatedAt = s.now()
+
+	if err := s.ownershipRepo.Upsert(ctx, stockOwnership); err != nil {
+		return nil, pkgerrors.InternalErr(err)
+	}
+	if err := s.ownershipRepo.Upsert(ctx, optionOwnership); err != nil {
+		return nil, pkgerrors.InternalErr(err)
+	}
+
+	return &dto.ExerciseOptionResponse{
+		OptionAssetID:           option.AssetID,
+		StockAssetID:            option.Stock.AssetID,
+		ExercisedContracts:      exercisedContracts,
+		PurchasedShares:         purchasedShares,
+		StrikePrice:             option.StrikePrice,
+		TotalCost:               totalCost,
+		RemainingOptionShares:   remainingShares,
+		RemainingContracts:      heldContracts - exercisedContracts,
+		SourceAmount:            settlement.GetSourceAmount(),
+		SourceCurrencyCode:      settlement.GetSourceCurrencyCode(),
+		DestinationAmount:       settlement.GetDestinationAmount(),
+		DestinationCurrencyCode: settlement.GetDestinationCurrencyCode(),
+	}, nil
+}
+
+func findOwnershipByAssetID(ownerships []model.AssetOwnership, assetID uint) *model.AssetOwnership {
+	for i := range ownerships {
+		if ownerships[i].AssetID == assetID {
+			return &ownerships[i]
+		}
+	}
+
+	return nil
+}
+
+func exercisedContracts(amount float64, contractSize int) (uint, error) {
+	if contractSize <= 0 {
+		return 0, fmt.Errorf("option contract size must be positive")
+	}
+
+	contracts := amount / float64(contractSize)
+	if math.Abs(contracts-math.Round(contracts)) > 1e-9 {
+		return 0, fmt.Errorf("option position amount is inconsistent with contract size")
+	}
+
+	return uint(math.Round(contracts)), nil
+}
+
+func listingCurrency(primary *model.Listing, fallback *model.Listing) (string, error) {
+	if primary != nil && primary.Exchange != nil && primary.Exchange.Currency != "" {
+		return normalizeCurrencyCode(primary.Exchange.Currency), nil
+	}
+
+	if fallback != nil && fallback.Exchange != nil && fallback.Exchange.Currency != "" {
+		return normalizeCurrencyCode(fallback.Exchange.Currency), nil
+	}
+
+	return "", fmt.Errorf("listing does not have valid exchange/currency code")
 }
