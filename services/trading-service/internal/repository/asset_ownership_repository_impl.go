@@ -31,7 +31,7 @@ func (r *assetOwnershipRepository) FindByIdentity(ctx context.Context, identityI
 
 func (r *assetOwnershipRepository) FindByID(ctx context.Context, id uint) (*model.AssetOwnership, error) {
 	var o model.AssetOwnership
-	result := r.db.WithContext(ctx).First(&o, id)
+	result := r.db.WithContext(ctx).Preload("Asset").First(&o, id)
 	if stderrors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

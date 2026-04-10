@@ -198,94 +198,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/actuary/{actId}/orders": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns a paginated list of orders belonging to the specified actuary (employee agent/supervisor). Supports filtering by status, direction, and completion. Includes planned execution time for each order.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "orders"
-                ],
-                "summary": "Get orders for an actuary",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Actuary ID",
-                        "name": "actId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status (PENDING, APPROVED, DECLINED)",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by direction (BUY, SELL)",
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filter by completion status",
-                        "name": "is_done",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ListOrdersWithExecutionResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    }
-                }
-            }
-        },
         "/api/client/{clientId}/accumulated-tax": {
             "get": {
                 "security": [
@@ -469,14 +381,17 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/client/{clientId}/assets/{id}/publish/{amount}": {
+        "/api/client/{clientId}/assets/{ownershipId}/publish": {
             "patch": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Sets the number of assets the caller makes publicly visible on the OTC portal.",
+                "description": "Appends the number of assets the caller makes publicly visible on the OTC portal.",
+                "consumes": [
+                    "application/json"
+                ],
                 "tags": [
                     "otc"
                 ],
@@ -485,16 +400,18 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Asset ownership ID",
-                        "name": "id",
+                        "name": "ownershipId",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "type": "number",
                         "description": "Amount to make public",
-                        "name": "amount",
-                        "in": "path",
-                        "required": true
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PublishAssetRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -521,94 +438,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/client/{clientId}/orders": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns a paginated list of orders belonging to the specified client. Supports filtering by status, direction, and completion. Includes planned execution time for each order.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "orders"
-                ],
-                "summary": "Get orders for a client",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Client ID",
-                        "name": "clientId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status (PENDING, APPROVED, DECLINED)",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by direction (BUY, SELL)",
-                        "name": "direction",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filter by completion status",
-                        "name": "is_done",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.ListOrdersWithExecutionResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
                         }
@@ -2162,26 +1991,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ListOrdersWithExecutionResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.OrderWithExecutionResponse"
-                    }
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                }
-            }
-        },
         "dto.ListTaxUsersResponse": {
             "type": "object",
             "properties": {
@@ -2420,80 +2229,6 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.OrderWithExecutionResponse": {
-            "type": "object",
-            "properties": {
-                "account_number": {
-                    "type": "string"
-                },
-                "after_hours": {
-                    "type": "boolean"
-                },
-                "all_or_none": {
-                    "type": "boolean"
-                },
-                "approved_by": {
-                    "type": "integer"
-                },
-                "contract_size": {
-                    "type": "number"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "direction": {
-                    "$ref": "#/definitions/model.OrderDirection"
-                },
-                "is_done": {
-                    "type": "boolean"
-                },
-                "limit_value": {
-                    "type": "number"
-                },
-                "listing_id": {
-                    "type": "integer"
-                },
-                "listing_name": {
-                    "type": "string"
-                },
-                "margin": {
-                    "type": "boolean"
-                },
-                "order_id": {
-                    "type": "integer"
-                },
-                "order_type": {
-                    "$ref": "#/definitions/model.OrderType"
-                },
-                "planned_execution_time": {
-                    "type": "string"
-                },
-                "price_per_unit": {
-                    "type": "number"
-                },
-                "quantity": {
-                    "type": "integer"
-                },
-                "remaining_portions": {
-                    "type": "integer"
-                },
-                "status": {
-                    "$ref": "#/definitions/model.OrderStatus"
-                },
-                "stop_value": {
-                    "type": "number"
-                },
-                "ticker": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
         "dto.PaginatedForexResponse": {
             "type": "object",
             "properties": {
@@ -2586,13 +2321,13 @@ const docTemplate = `{
                 "lastModified": {
                     "type": "string"
                 },
-                "outstandingShares": {
-                    "type": "number"
-                },
                 "pricePerUnitRSD": {
                     "type": "number"
                 },
                 "profit": {
+                    "type": "number"
+                },
+                "publicAmount": {
                     "type": "number"
                 },
                 "ticker": {
@@ -2607,6 +2342,17 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "totalProfitRSD": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.PublishAssetRequest": {
+            "type": "object",
+            "required": [
+                "amount"
+            ],
+            "properties": {
+                "amount": {
                     "type": "number"
                 }
             }

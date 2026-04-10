@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/client"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
@@ -38,6 +37,9 @@ func (s *OTCService) PublishAsset(ctx context.Context, ownershipID, identityID u
 	if ownership == nil {
 		return errors.NotFoundErr("asset ownership not found")
 	}
+	if ownership.Asset.AssetType != model.AssetTypeStock {
+		return errors.BadRequestErr("only stocks can be published for OTC trading")
+	}
 
 	if ownership.IdentityID != identityID || ownership.OwnerType != ownerType {
 		return errors.ForbiddenErr("you do not own this asset")
@@ -47,7 +49,6 @@ func (s *OTCService) PublishAsset(ctx context.Context, ownershipID, identityID u
 		return errors.BadRequestErr("amount must be non-negative")
 	}
 	if ownership.PublicAmount+amount > ownership.Amount-ownership.ReservedAmount {
-		log.Printf("Attempted to publish more assets than available. PublicAmount: %f, Amount: %f, ReservedAmount: %f", ownership.PublicAmount, ownership.Amount, ownership.ReservedAmount)
 		return errors.BadRequestErr("amount exceeds available (owned minus reserved) stocks")
 	}
 

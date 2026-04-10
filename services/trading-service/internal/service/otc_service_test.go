@@ -39,6 +39,7 @@ func makeOwnershipForOTC(id, identityID, assetID uint, ownerType model.OwnerType
 		IdentityID:       identityID,
 		OwnerType:        ownerType,
 		AssetID:          assetID,
+		Asset:            model.Asset{AssetID: assetID, AssetType: model.AssetTypeStock},
 		Amount:           amount,
 		ReservedAmount:   reserved,
 		UpdatedAt:        time.Now(),

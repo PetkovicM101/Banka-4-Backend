@@ -241,19 +241,6 @@ definitions:
       total:
         type: integer
     type: object
-  dto.ListOrdersWithExecutionResponse:
-    properties:
-      data:
-        items:
-          $ref: '#/definitions/dto.OrderWithExecutionResponse'
-        type: array
-      page:
-        type: integer
-      page_size:
-        type: integer
-      total:
-        type: integer
-    type: object
   dto.ListTaxUsersResponse:
     properties:
       data:
@@ -411,55 +398,6 @@ definitions:
       user_id:
         type: integer
     type: object
-  dto.OrderWithExecutionResponse:
-    properties:
-      account_number:
-        type: string
-      after_hours:
-        type: boolean
-      all_or_none:
-        type: boolean
-      approved_by:
-        type: integer
-      contract_size:
-        type: number
-      created_at:
-        type: string
-      direction:
-        $ref: '#/definitions/model.OrderDirection'
-      is_done:
-        type: boolean
-      limit_value:
-        type: number
-      listing_id:
-        type: integer
-      listing_name:
-        type: string
-      margin:
-        type: boolean
-      order_id:
-        type: integer
-      order_type:
-        $ref: '#/definitions/model.OrderType'
-      planned_execution_time:
-        type: string
-      price_per_unit:
-        type: number
-      quantity:
-        type: integer
-      remaining_portions:
-        type: integer
-      status:
-        $ref: '#/definitions/model.OrderStatus'
-      stop_value:
-        type: number
-      ticker:
-        type: string
-      updated_at:
-        type: string
-      user_id:
-        type: integer
-    type: object
   dto.PaginatedForexResponse:
     properties:
       data:
@@ -520,11 +458,11 @@ definitions:
         type: number
       lastModified:
         type: string
-      outstandingShares:
-        type: number
       pricePerUnitRSD:
         type: number
       profit:
+        type: number
+      publicAmount:
         type: number
       ticker:
         type: string
@@ -535,6 +473,13 @@ definitions:
     properties:
       totalProfitRSD:
         type: number
+    type: object
+  dto.PublishAssetRequest:
+    properties:
+      amount:
+        type: number
+    required:
+    - amount
     type: object
   dto.StockDetailedResponse:
     properties:
@@ -868,21 +813,24 @@ paths:
       summary: Get portfolio for a client
       tags:
       - portfolio
-  /api/client/{clientId}/assets/{id}/publish/{amount}:
+  /api/client/{clientId}/assets/{ownershipId}/publish:
     patch:
-      description: Sets the number of assets the caller makes publicly visible on
-        the OTC portal.
+      consumes:
+      - application/json
+      description: Appends the number of assets the caller makes publicly visible
+        on the OTC portal.
       parameters:
       - description: Asset ownership ID
         in: path
-        name: id
+        name: ownershipId
         required: true
         type: integer
       - description: Amount to make public
-        in: path
-        name: amount
+        in: body
+        name: request
         required: true
-        type: number
+        schema:
+          $ref: '#/definitions/dto.PublishAssetRequest'
       responses:
         "204":
           description: No Content

@@ -59,8 +59,8 @@ func TestOTCHandler_PublishAsset_ClientSuccess(t *testing.T) {
 	listing := seedListing(t, db, uniqueTicker(t), ex.MicCode, model.AssetTypeStock, 100.0)
 	ownership := seedAssetOwnership(t, db, 50, model.OwnerTypeClient, listing.AssetID, 20)
 
-	path := fmt.Sprintf("/api/client/50/assets/%d/publish/5", ownership.AssetOwnershipID)
-	rec := performRequest(t, router, http.MethodPatch, path, nil, authHeaderForClient(t, 50, 50))
+	path := fmt.Sprintf("/api/client/50/assets/%d/publish", ownership.AssetOwnershipID)
+	rec := performRequest(t, router, http.MethodPatch, path, map[string]any{"amount": 5}, authHeaderForClient(t, 50, 50))
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
@@ -73,8 +73,8 @@ func TestOTCHandler_PublishAsset_ActuarySuccess(t *testing.T) {
 	listing := seedListing(t, db, uniqueTicker(t), ex.MicCode, model.AssetTypeStock, 50.0)
 	ownership := seedAssetOwnership(t, db, 200, model.OwnerTypeActuary, listing.AssetID, 15)
 
-	path := fmt.Sprintf("/api/actuary/20/assets/%d/publish/3", ownership.AssetOwnershipID)
-	rec := performRequest(t, router, http.MethodPatch, path, nil, authHeaderForAgent(t))
+	path := fmt.Sprintf("/api/actuary/20/assets/%d/publish", ownership.AssetOwnershipID)
+	rec := performRequest(t, router, http.MethodPatch, path, map[string]any{"amount": 3}, authHeaderForAgent(t))
 	requireStatus(t, rec, http.StatusNoContent)
 }
 
@@ -83,7 +83,7 @@ func TestOTCHandler_PublishAsset_Unauthenticated(t *testing.T) {
 	db := setupTestDB(t)
 	router, _ := setupTestRouter(t, db)
 
-	rec := performRequest(t, router, http.MethodPatch, "/api/client/50/assets/1/publish/5", nil, "")
+	rec := performRequest(t, router, http.MethodPatch, "/api/client/50/assets/1/publish", map[string]any{"amount": 5}, "")
 	requireStatus(t, rec, http.StatusUnauthorized)
 }
 
@@ -96,8 +96,8 @@ func TestOTCHandler_PublishAsset_WrongOwner(t *testing.T) {
 	listing := seedListing(t, db, uniqueTicker(t), ex.MicCode, model.AssetTypeStock, 100.0)
 	ownership := seedAssetOwnership(t, db, 50, model.OwnerTypeClient, listing.AssetID, 20)
 
-	path := fmt.Sprintf("/api/client/99/assets/%d/publish/5", ownership.AssetOwnershipID)
-	rec := performRequest(t, router, http.MethodPatch, path, nil, authHeaderForClient(t, 99, 99))
+	path := fmt.Sprintf("/api/client/99/assets/%d/publish", ownership.AssetOwnershipID)
+	rec := performRequest(t, router, http.MethodPatch, path, map[string]any{"amount": 5}, authHeaderForClient(t, 99, 99))
 	requireStatus(t, rec, http.StatusForbidden)
 }
 
@@ -106,7 +106,7 @@ func TestOTCHandler_PublishAsset_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	router, _ := setupTestRouter(t, db)
 
-	rec := performRequest(t, router, http.MethodPatch, "/api/client/50/assets/99999/publish/1", nil, authHeaderForClient(t, 50, 50))
+	rec := performRequest(t, router, http.MethodPatch, "/api/client/50/assets/99999/publish", map[string]any{"amount": 1}, authHeaderForClient(t, 50, 50))
 	requireStatus(t, rec, http.StatusNotFound)
 }
 
@@ -119,8 +119,8 @@ func TestOTCHandler_PublishAsset_AmountExceedsOwned(t *testing.T) {
 	listing := seedListing(t, db, uniqueTicker(t), ex.MicCode, model.AssetTypeStock, 100.0)
 	ownership := seedAssetOwnership(t, db, 50, model.OwnerTypeClient, listing.AssetID, 10)
 
-	path := fmt.Sprintf("/api/client/50/assets/%d/publish/9999", ownership.AssetOwnershipID)
-	rec := performRequest(t, router, http.MethodPatch, path, nil, authHeaderForClient(t, 50, 50))
+	path := fmt.Sprintf("/api/client/50/assets/%d/publish", ownership.AssetOwnershipID)
+	rec := performRequest(t, router, http.MethodPatch, path, map[string]any{"amount": 9999}, authHeaderForClient(t, 50, 50))
 	requireStatus(t, rec, http.StatusBadRequest)
 }
 
@@ -134,8 +134,8 @@ func TestOTCHandler_PublishAsset_UpdatesExistingPublicAmount(t *testing.T) {
 	ownership := seedAssetOwnership(t, db, 50, model.OwnerTypeClient, listing.AssetID, 20)
 	setPublicAmount(t, db, ownership.AssetOwnershipID, 3, 0)
 
-	path := fmt.Sprintf("/api/client/50/assets/%d/publish/8", ownership.AssetOwnershipID)
-	rec := performRequest(t, router, http.MethodPatch, path, nil, authHeaderForClient(t, 50, 50))
+	path := fmt.Sprintf("/api/client/50/assets/%d/publish", ownership.AssetOwnershipID)
+	rec := performRequest(t, router, http.MethodPatch, path, map[string]any{"amount": 8}, authHeaderForClient(t, 50, 50))
 	requireStatus(t, rec, http.StatusNoContent)
 
 	var updated model.AssetOwnership

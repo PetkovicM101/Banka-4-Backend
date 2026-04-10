@@ -8,6 +8,7 @@ import (
 
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	pkgerrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/service"
 )
@@ -26,8 +27,9 @@ func NewOTCHandler(service *service.OTCService) *OTCHandler {
 // The amount replaces the current public amount. Must be non-negative and cannot exceed
 // owned minus reserved. Accessible by the owning client or actuary only.
 // @Tags otc
-// @Param id path int true "Asset ownership ID"
-// @Param amount path number true "Amount to make public"
+// @Accept json
+// @Param ownershipId path int true "Asset ownership ID"
+// @Param request body dto.PublishAssetRequest true "Amount to make public"
 // @Success 204
 // @Failure 400 {object} errors.AppError
 // @Failure 401 {object} errors.AppError
@@ -35,19 +37,20 @@ func NewOTCHandler(service *service.OTCService) *OTCHandler {
 // @Failure 404 {object} errors.AppError
 // @Failure 500 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/client/{clientId}/assets/{id}/publish/{amount} [patch]
+// @Router /api/client/{clientId}/assets/{ownershipId}/publish [patch]
 func (h *OTCHandler) PublishAsset(c *gin.Context) {
-	ownershipID, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	ownershipID, err := strconv.ParseUint(c.Param("ownershipId"), 10, 64)
 	if err != nil {
 		c.Error(pkgerrors.BadRequestErr("invalid asset ownership id"))
 		return
 	}
 
-	amount, err := strconv.ParseFloat(c.Param("amount"), 64)
-	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid amount"))
+	var req dto.PublishAssetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.Error(pkgerrors.BadRequestErr("invalid request body"))
 		return
 	}
+	amount := req.Amount
 
 	authCtx := auth.GetAuth(c)
 	if authCtx == nil {
@@ -82,16 +85,14 @@ func (h *OTCHandler) PublishAsset(c *gin.Context) {
 // @Security BearerAuth
 // @Router /api/otc/public [get]
 func (h *OTCHandler) GetPublicOTCAssets(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-	if page <= 0 {
-		page = 1
+	var q dto.OTCListRequest
+	if err := c.ShouldBindQuery(&q); err != nil {
+		c.Error(pkgerrors.BadRequestErr(err.Error()))
+		return
 	}
-	if pageSize <= 0 {
-		pageSize = 10
-	}
+	q.Normalize()
 
-	assets, total, err := h.service.GetPublicOTCAssets(c.Request.Context(), page, pageSize)
+	assets, total, err := h.service.GetPublicOTCAssets(c.Request.Context(), q.Page, q.PageSize)
 	if err != nil {
 		c.Error(err)
 		return
@@ -100,7 +101,7 @@ func (h *OTCHandler) GetPublicOTCAssets(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"data":      assets,
 		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
+		"page":      q.Page,
+		"page_size": q.PageSize,
 	})
 }
