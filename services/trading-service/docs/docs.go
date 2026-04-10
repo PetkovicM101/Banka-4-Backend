@@ -464,7 +464,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/exchange": {
+        "/api/exchanges": {
             "get": {
                 "description": "Returns a paginated list of all stock exchanges",
                 "produces": [
@@ -517,7 +517,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/exchange/{micCode}/toggle": {
+        "/api/exchanges/{micCode}/toggle": {
             "patch": {
                 "description": "Enables or disables trading time enforcement for a specific exchange (for testing purposes)",
                 "produces": [
@@ -1470,44 +1470,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/tax/collect": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Runs the tax collection process for all users. Restricted to authorized personnel.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "tax"
-                ],
-                "summary": "Trigger tax collection",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/dto.CollectTaxesResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/tax/users": {
+        "/api/tax": {
             "get": {
                 "security": [
                     {
@@ -1568,6 +1531,43 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/tax/collect": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Runs the tax collection process for all users. Restricted to authorized personnel.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tax"
+                ],
+                "summary": "Trigger tax collection",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CollectTaxesResponse"
                         }
                     },
                     "401": {
