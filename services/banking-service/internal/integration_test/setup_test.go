@@ -11,9 +11,10 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http/httptest"
+	"os"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -37,14 +38,66 @@ import (
 	"gorm.io/gorm"
 )
 
-var testSetupOnce sync.Once
+var sharedDB *gorm.DB
 var uniqueCounter atomic.Uint64
 
-func init() {
-	testSetupOnce.Do(func() {
-		gin.SetMode(gin.TestMode)
-		_ = logging.Init("test")
-	})
+func TestMain(m *testing.M) {
+	gin.SetMode(gin.TestMode)
+	_ = logging.Init("test")
+
+	ctx := context.Background()
+	container, err := tcpostgres.Run(
+		ctx,
+		"postgres:16-alpine",
+		tcpostgres.WithDatabase("banking_service_test"),
+		tcpostgres.WithUsername("postgres"),
+		tcpostgres.WithPassword("postgres"),
+		tcpostgres.BasicWaitStrategies(),
+	)
+	if err != nil {
+		log.Fatalf("start postgres container: %v", err)
+	}
+
+	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		log.Fatalf("build postgres connection string: %v", err)
+	}
+
+	db, err := gorm.Open(gormpostgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("open gorm db: %v", err)
+	}
+
+	if err := db.AutoMigrate(
+		&model.Currency{},
+		&model.WorkCode{},
+		&model.Company{},
+		&model.Account{},
+		&model.AuthorizedPerson{},
+		&model.Card{},
+		&model.CardRequest{},
+		&model.Transaction{},
+		&model.Payment{},
+		&model.Transfer{},
+		&model.Payee{},
+		&model.LoanType{},
+		&model.LoanRequest{},
+		&model.Loan{},
+		&model.LoanInstallment{},
+		&model.VerificationToken{},
+		&model.ExchangeRate{},
+	); err != nil {
+		log.Fatalf("auto migrate test schema: %v", err)
+	}
+
+	sharedDB = db
+	code := m.Run()
+
+	sqlDB, _ := db.DB()
+	_ = sqlDB.Close()
+	_ = container.Terminate(ctx)
+
+	os.Exit(code)
 }
 
 type fakeMailer struct{}
@@ -114,72 +167,16 @@ func testConfig() *config.Configuration {
 func setupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	ctx := context.Background()
-	container, err := tcpostgres.Run(
-		ctx,
-		"postgres:16-alpine",
-		tcpostgres.WithDatabase("banking_service_test"),
-		tcpostgres.WithUsername("postgres"),
-		tcpostgres.WithPassword("postgres"),
-		tcpostgres.BasicWaitStrategies(),
-	)
-
-	if err != nil {
-		t.Fatalf("start postgres container: %v", err)
+	tx := sharedDB.Begin()
+	if tx.Error != nil {
+		t.Fatalf("begin transaction: %v", tx.Error)
 	}
 
 	t.Cleanup(func() {
-		if err := container.Terminate(context.Background()); err != nil {
-			t.Fatalf("terminate postgres container: %v", err)
-		}
+		tx.Rollback()
 	})
 
-	dsn, err := container.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("build postgres connection string: %v", err)
-	}
-
-	db, err := gorm.Open(gormpostgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("open gorm db: %v", err)
-	}
-
-	sqlDB, err := db.DB()
-	if err != nil {
-		t.Fatalf("get sql db: %v", err)
-	}
-
-	t.Cleanup(func() {
-		if err := sqlDB.Close(); err != nil {
-			t.Fatalf("close sql db: %v", err)
-		}
-	})
-
-	if err := db.AutoMigrate(
-		&model.Currency{},
-		&model.WorkCode{},
-		&model.Company{},
-		&model.Account{},
-		&model.AuthorizedPerson{},
-		&model.Card{},
-		&model.CardRequest{},
-		&model.Transaction{},
-		&model.Payment{},
-		&model.Transfer{},
-		&model.Payee{},
-		&model.LoanType{},
-		&model.LoanRequest{},
-		&model.Loan{},
-		&model.LoanInstallment{},
-		&model.VerificationToken{},
-		&model.ExchangeRate{},
-		&model.Loan{},
-		&model.LoanInstallment{},
-	); err != nil {
-		t.Fatalf("auto migrate test schema: %v", err)
-	}
-
-	return db
+	return tx
 }
 
 func setupTestRouter(t *testing.T, db *gorm.DB) *gin.Engine {

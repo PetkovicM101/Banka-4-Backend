@@ -99,9 +99,10 @@ type fakeUserClient struct {
 
 func (f *fakeUserClient) GetClientById(_ context.Context, id uint64) (*pb.GetClientByIdResponse, error) {
 	return &pb.GetClientByIdResponse{
-		Id:       id,
-		Email:    fmt.Sprintf("client-%d@example.com", id),
-		FullName: fmt.Sprintf("Client %d", id),
+		Id:         id,
+		Email:      fmt.Sprintf("client-%d@example.com", id),
+		FullName:   fmt.Sprintf("Client %d", id),
+		IdentityId: id,
 	}, nil
 }
 
@@ -118,6 +119,7 @@ func (f *fakeUserClient) GetEmployeeById(_ context.Context, id uint64) (*pb.GetE
 		FullName:     fmt.Sprintf("Employee %d", id),
 		IsSupervisor: isSupervisor,
 		IsAgent:      isAgent,
+		IdentityId:   id,
 	}, nil
 }
 
@@ -251,7 +253,7 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 
 	var taxRecorder service.TaxRecorder = &fakeTaxRecorder{}
 	orderSvc := service.NewOrderService(orderRepo, orderTxRepo, exchangeRepo, listingRepo, assetOwnershipRepo, futuresRepo, optionRepo, userClient, bankingClient, taxRecorder)
-	portfolioSvc := service.NewPortfolioService(assetOwnershipRepo, stockRepo, optionRepo, futuresRepo, forexRepo, bankingClient)
+	portfolioSvc := service.NewPortfolioService(assetOwnershipRepo, stockRepo, optionRepo, futuresRepo, forexRepo, bankingClient, userClient)
 
 	taxSvc := service.NewTaxService(taxRepo, bankingClient, cfg)
 
@@ -432,6 +434,23 @@ func seedOrder(t *testing.T, db *gorm.DB, userID, listingID uint, direction mode
 	}
 
 	return order
+}
+
+func seedAssetOwnership(t *testing.T, db *gorm.DB, identityID uint, ownerType model.OwnerType, assetID uint, amount float64) *model.AssetOwnership {
+	t.Helper()
+
+	ownership := &model.AssetOwnership{
+		IdentityID: identityID,
+		OwnerType:  ownerType,
+		AssetID:    assetID,
+		Amount:     amount,
+	}
+
+	if err := db.Create(ownership).Error; err != nil {
+		t.Fatalf("seed asset ownership: %v", err)
+	}
+
+	return ownership
 }
 
 func seedDailyPriceInfo(t *testing.T, db *gorm.DB, listingID uint) {

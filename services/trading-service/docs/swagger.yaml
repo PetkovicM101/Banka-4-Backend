@@ -672,6 +672,10 @@ paths:
           description: Forbidden
           schema:
             $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
         "500":
           description: Internal Server Error
           schema:
@@ -708,6 +712,10 @@ paths:
             $ref: '#/definitions/errors.AppError'
         "403":
           description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/errors.AppError'
         "500":
@@ -785,6 +793,10 @@ paths:
           description: Forbidden
           schema:
             $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
         "500":
           description: Internal Server Error
           schema:
@@ -821,6 +833,10 @@ paths:
             $ref: '#/definitions/errors.AppError'
         "403":
           description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/errors.AppError'
         "500":

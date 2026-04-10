@@ -377,6 +377,11 @@ func TestProcessOrder_MarketSell_WithCommission(t *testing.T) {
 		},
 	}
 	svc := newTestOrderService(orderRepo, txRepo, exchangeRepo, listingRepo, &fakeUserServiceClient{}, bankingClient, &fakeTaxRecorder{})
+	svc.assetOwnershipRepo = &fakeAssetOwnershipRepo{
+		ownerships: []model.AssetOwnership{
+			{AssetID: listing.AssetID, Amount: 10},
+		},
+	}
 
 	order := &model.Order{
 		OrderID:           1,

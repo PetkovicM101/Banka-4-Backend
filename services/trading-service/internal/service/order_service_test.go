@@ -426,6 +426,11 @@ func TestCreateOrder_LimitSell_Success(t *testing.T) {
 		&fakeOrderBankingClient{accountResp: defaultAccountResp(10)},
 		&fakeTaxRecorder{},
 	)
+	svc.assetOwnershipRepo = &fakeAssetOwnershipRepo{
+		ownerships: []model.AssetOwnership{
+			{AssetID: listing.AssetID, IdentityID: 1, OwnerType: model.OwnerTypeClient, Amount: 10},
+		},
+	}
 	ctx := clientAuthCtx()
 	req := dto.CreateOrderRequest{
 		ListingID:     1,
