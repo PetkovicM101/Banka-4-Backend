@@ -32,6 +32,22 @@ func (c *UserServiceClient) GetEmployeeById(ctx context.Context, id uint64) (*pb
 	return resp, nil
 }
 
+func (c *UserServiceClient) GetClientByUserId(ctx context.Context, userId uint64) (*pb.GetClientByIdResponse, error) {
+	resp, err := c.stub.GetClientByUserId(ctx, &pb.GetClientByUserIdRequest{UserId: userId})
+	if err != nil {
+		return nil, fmt.Errorf("user client GetClientByUserId: %w", err)
+	}
+	return resp, nil
+}
+
+func (c *UserServiceClient) GetEmployeeByUserId(ctx context.Context, userId uint64) (*pb.GetEmployeeByIdResponse, error) {
+	resp, err := c.stub.GetEmployeeByUserId(ctx, &pb.GetEmployeeByUserIdRequest{UserId: userId})
+	if err != nil {
+		return nil, fmt.Errorf("user client GetEmployeeByUserId: %w", err)
+	}
+	return resp, nil
+}
+
 func (c *UserServiceClient) GetAllClients(ctx context.Context, page, pageSize int32, firstName, lastName string) (*pb.GetAllClientsResponse, error) {
 	resp, err := c.stub.GetAllClients(ctx, &pb.GetAllClientsRequest{
 		Page: page, PageSize: pageSize, FirstName: firstName, LastName: lastName,

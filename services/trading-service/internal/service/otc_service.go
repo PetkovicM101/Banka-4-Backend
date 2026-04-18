@@ -103,6 +103,7 @@ func (s *OTCService) GetPublicOTCAssets(ctx context.Context, page, pageSize int)
 
 		var ownerName string
 		if o.OwnerType == model.OwnerTypeClient {
+
 			userResp, userErr := s.userClient.GetClientById(ctx, uint64(o.IdentityID))
 			if userErr == nil && userResp != nil {
 				ownerName = userResp.FullName

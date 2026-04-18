@@ -23,6 +23,14 @@ func (f *fakeOTCUserClient) GetEmployeeById(_ context.Context, id uint64) (*pb.G
 	return &pb.GetEmployeeByIdResponse{Id: id, FullName: "Test Employee"}, nil
 }
 
+func (f *fakeOTCUserClient) GetClientByUserId(_ context.Context, id uint64) (*pb.GetClientByIdResponse, error) {
+	return &pb.GetClientByIdResponse{Id: id, FullName: "Test Client"}, nil
+}
+
+func (f *fakeOTCUserClient) GetEmployeeByUserId(_ context.Context, id uint64) (*pb.GetEmployeeByIdResponse, error) {
+	return &pb.GetEmployeeByIdResponse{Id: id, FullName: "Test Employee"}, nil
+}
+
 func (f *fakeOTCUserClient) GetAllClients(_ context.Context, _, _ int32, _, _ string) (*pb.GetAllClientsResponse, error) {
 	return &pb.GetAllClientsResponse{}, nil
 }

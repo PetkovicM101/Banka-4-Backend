@@ -5,14 +5,17 @@ package user.v1;
 option go_package = "common/pkg/pb;pb";
 
 service UserService {
-  rpc GetClientById(GetClientByIdRequest)       returns (GetClientByIdResponse);
-  rpc GetEmployeeById(GetEmployeeByIdRequest)   returns (GetEmployeeByIdResponse);
-  rpc GetAllClients(GetAllClientsRequest)       returns (GetAllClientsResponse);
-  rpc GetAllActuaries(GetAllActuariesRequest)   returns (GetAllActuariesResponse);
+  rpc GetClientById(GetClientByIdRequest)           returns (GetClientByIdResponse);
+  rpc GetClientByUserId(GetClientByUserIdRequest)   returns (GetClientByIdResponse);
+  rpc GetEmployeeById(GetEmployeeByIdRequest)       returns (GetEmployeeByIdResponse);
+  rpc GetEmployeeByUserId(GetEmployeeByUserIdRequest) returns (GetEmployeeByIdResponse);
+  rpc GetAllClients(GetAllClientsRequest)           returns (GetAllClientsResponse);
+  rpc GetAllActuaries(GetAllActuariesRequest)       returns (GetAllActuariesResponse);
 }
 
 
-message GetClientByIdRequest  { uint64 id = 1; }
+message GetClientByIdRequest       { uint64 id      = 1; }
+message GetClientByUserIdRequest   { uint64 user_id = 1; }
 message GetClientByIdResponse {
   uint64 id          = 1;
   string email       = 2;
@@ -20,7 +23,8 @@ message GetClientByIdResponse {
   uint64 identity_id = 4;
 }
 
-message GetEmployeeByIdRequest  { uint64 id = 1; }
+message GetEmployeeByIdRequest     { uint64 id      = 1; }
+message GetEmployeeByUserIdRequest { uint64 user_id = 1; }
 message GetEmployeeByIdResponse {
   uint64 id            = 1;
   string email         = 2;

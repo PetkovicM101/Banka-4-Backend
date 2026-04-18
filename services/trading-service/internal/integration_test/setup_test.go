@@ -122,6 +122,28 @@ func (f *fakeUserClient) GetEmployeeById(_ context.Context, id uint64) (*pb.GetE
 	}, nil
 }
 
+func (f *fakeUserClient) GetClientByUserId(_ context.Context, id uint64) (*pb.GetClientByIdResponse, error) {
+	return &pb.GetClientByIdResponse{
+		Id:         id,
+		Email:      fmt.Sprintf("client-%d@example.com", id),
+		FullName:   fmt.Sprintf("Client %d", id),
+		IdentityId: id,
+	}, nil
+}
+
+func (f *fakeUserClient) GetEmployeeByUserId(_ context.Context, id uint64) (*pb.GetEmployeeByIdResponse, error) {
+	isSupervisor := f.supervisorIDs[id]
+	isAgent := f.agentIDs[id]
+	return &pb.GetEmployeeByIdResponse{
+		Id:           id,
+		Email:        fmt.Sprintf("employee-%d@example.com", id),
+		FullName:     fmt.Sprintf("Employee %d", id),
+		IsSupervisor: isSupervisor,
+		IsAgent:      isAgent,
+		IdentityId:   id,
+	}, nil
+}
+
 func (f *fakeUserClient) GetAllClients(_ context.Context, _, _ int32, _, _ string) (*pb.GetAllClientsResponse, error) {
 	return &pb.GetAllClientsResponse{
 		Clients: []*pb.ClientResponse{

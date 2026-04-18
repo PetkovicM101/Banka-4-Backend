@@ -564,7 +564,6 @@ func (s *OrderService) updateAssetOwnership(ctx context.Context, order *model.Or
 	}
 
 	ownership.UpdatedAt = s.now()
-	log.Printf("Updating asset ownership: %+v", ownership)
 	return s.assetOwnershipRepo.Upsert(ctx, ownership)
 }
 

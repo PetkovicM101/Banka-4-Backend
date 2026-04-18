@@ -8,7 +8,9 @@ import (
 
 type UserServiceClient interface {
 	GetClientById(ctx context.Context, id uint64) (*pb.GetClientByIdResponse, error)
+	GetClientByUserId(ctx context.Context, userId uint64) (*pb.GetClientByIdResponse, error)
 	GetEmployeeById(ctx context.Context, id uint64) (*pb.GetEmployeeByIdResponse, error)
+	GetEmployeeByUserId(ctx context.Context, userId uint64) (*pb.GetEmployeeByIdResponse, error)
 	GetAllClients(ctx context.Context, page, pageSize int32, firstName, lastName string) (*pb.GetAllClientsResponse, error)
 	GetAllActuaries(ctx context.Context, page, pageSize int32, firstName, lastName string) (*pb.GetAllActuariesResponse, error)
 }

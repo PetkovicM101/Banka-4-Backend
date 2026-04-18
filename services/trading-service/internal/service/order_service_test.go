@@ -184,6 +184,14 @@ func (c *fakeUserServiceClient) GetClientById(_ context.Context, _ uint64) (*pb.
 	return c.clientResp, c.clientErr
 }
 
+func (c *fakeUserServiceClient) GetClientByUserId(_ context.Context, _ uint64) (*pb.GetClientByIdResponse, error) {
+	return c.clientResp, c.clientErr
+}
+
+func (c *fakeUserServiceClient) GetEmployeeByUserId(_ context.Context, _ uint64) (*pb.GetEmployeeByIdResponse, error) {
+	return c.employeeResp, c.employeeErr
+}
+
 func (c *fakeUserServiceClient) GetAllClients(_ context.Context, _, _ int32, _, _ string) (*pb.GetAllClientsResponse, error) {
 	return nil, nil
 }
