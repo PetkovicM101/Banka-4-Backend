@@ -269,7 +269,7 @@ func Run(db *gorm.DB) error {
 			ClientID:   traderClient.ClientID,
 			Permission: permission.Trading,
 		}
-		if err := db.Create(&perm).Error; err != nil {
+		if err := db.FirstOrCreate(&perm, perm).Error; err != nil {
 			return err
 		}
 	}
@@ -293,7 +293,7 @@ func Run(db *gorm.DB) error {
 			ClientID:   traderClient.ClientID,
 			Permission: permission.TradingMargin,
 		}
-		if err := db.Create(&perm).Error; err != nil {
+		if err := db.FirstOrCreate(&perm, perm).Error; err != nil {
 			return err
 		}
 	}
