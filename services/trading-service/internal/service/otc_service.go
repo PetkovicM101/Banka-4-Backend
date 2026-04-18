@@ -102,16 +102,25 @@ func (s *OTCService) GetPublicOTCAssets(ctx context.Context, page, pageSize int)
 		}
 
 		var ownerName string
+
 		if o.OwnerType == model.OwnerTypeClient {
 
-			userResp, userErr := s.userClient.GetClientById(ctx, uint64(o.IdentityID))
-			if userErr == nil && userResp != nil {
-				ownerName = userResp.FullName
+			userResp, err := s.userClient.GetClientByUserId(ctx, uint64(o.IdentityID))
+			if err != nil {
+				return nil, 0, errors.BadRequestErr("Bad identity id or type")
+			}
+			clientResp, clientErr := s.userClient.GetClientById(ctx, uint64(userResp.Id))
+			if clientResp != nil && clientErr == nil {
+				ownerName = clientResp.FullName
 			}
 		} else {
-			userResp, userErr := s.userClient.GetEmployeeById(ctx, uint64(o.IdentityID))
-			if userErr == nil && userResp != nil {
-				ownerName = userResp.FullName
+			userResp, err := s.userClient.GetEmployeeByUserId(ctx, uint64(o.IdentityID))
+			if err != nil {
+				return nil, 0, errors.BadRequestErr("Bad identity id or type")
+			}
+			empResp, empErr := s.userClient.GetEmployeeById(ctx, uint64(userResp.Id))
+			if empResp != nil && empErr == nil {
+				ownerName = empResp.FullName
 			}
 		}
 		resp.OwnerName = ownerName
