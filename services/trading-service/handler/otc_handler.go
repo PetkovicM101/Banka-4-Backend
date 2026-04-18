@@ -83,7 +83,7 @@ func (h *OTCHandler) PublishAssetClient(c *gin.Context) {
 // @Failure 404 {object} errors.AppError
 // @Failure 500 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/actuary/{actuaryId}/assets/{ownershipId}/publish [patch]
+// @Router /api/actuary/{actId}/assets/{ownershipId}/publish [patch]
 func (h *OTCHandler) PublishAssetActuary(c *gin.Context) {
 	ownershipID, err := strconv.ParseUint(c.Param("ownershipId"), 10, 64)
 	if err != nil {

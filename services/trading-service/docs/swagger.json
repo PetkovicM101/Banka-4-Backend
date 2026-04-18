@@ -190,6 +190,76 @@
                 }
             }
         },
+        "/api/actuary/{actId}/assets/{ownershipId}/publish": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Appends the number of assets the caller makes publicly visible on the OTC portal.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otc"
+                ],
+                "summary": "Publish assets for OTC trading",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ownership ID",
+                        "name": "ownershipId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Amount to make public",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PublishAssetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/actuary/{actId}/options/{assetId}/exercise": {
             "post": {
                 "security": [
@@ -239,76 +309,6 @@
                         "schema": {
                             "$ref": "#/definitions/dto.ExerciseOptionResponse"
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/errors.AppError"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/actuary/{actuaryId}/assets/{ownershipId}/publish": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Appends the number of assets the caller makes publicly visible on the OTC portal.",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "otc"
-                ],
-                "summary": "Publish assets for OTC trading",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Asset ownership ID",
-                        "name": "ownershipId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Amount to make public",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.PublishAssetRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
