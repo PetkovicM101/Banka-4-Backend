@@ -43,7 +43,7 @@ type fakeOrderRepo struct {
 	capturedUserID *uint
 }
 
-func (r *fakeOrderRepo) FindAll(_ context.Context, _, _ int, userID *uint, _ *model.OrderStatus, _ *model.OrderDirection, _ *bool) ([]model.Order, int64, error) {
+func (r *fakeOrderRepo) FindAll(_ context.Context, _, _ int, userID *uint, _ *model.OwnerType, _ *model.OrderStatus, _ *model.OrderDirection, _ *bool) ([]model.Order, int64, error) {
 	r.capturedUserID = userID
 	return r.orders, r.total, r.findErr
 }

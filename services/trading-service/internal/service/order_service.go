@@ -133,7 +133,7 @@ func (s *OrderService) Stop() {
 }
 
 func (s *OrderService) GetOrders(ctx context.Context, query dto.ListOrdersQuery) ([]model.Order, int64, error) {
-	orders, total, err := s.orderRepo.FindAll(ctx, query.Page, query.PageSize, nil, query.Status, query.Direction, query.IsDone)
+	orders, total, err := s.orderRepo.FindAll(ctx, query.Page, query.PageSize, nil, nil, query.Status, query.Direction, query.IsDone)
 	if err != nil {
 		return nil, 0, errors.InternalErr(err)
 	}
