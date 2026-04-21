@@ -279,14 +279,7 @@ func (s *OrderService) ApproveOrder(ctx context.Context, orderID uint) (*model.O
 		return nil, errors.NotFoundErr("exchange not found")
 	}
 	
-	listing, err := s.listingRepo.FindByID(ctx, order.ListingID, 0)
-	if err != nil {
-		return nil, errors.InternalErr(err)
-	}
-	if listing == nil {
-		return nil, errors.NotFoundErr("listing not found")
-	}
-	if err := s.validateSettlementDate(ctx, listing); err != nil {
+	if err := s.validateSettlementDate(ctx, &order.Listing); err != nil {
 		return nil, err
 	}
 	ownerType := model.OwnerTypeClient
@@ -294,8 +287,8 @@ func (s *OrderService) ApproveOrder(ctx context.Context, orderID uint) (*model.O
 		ownerType = model.OwnerTypeActuary
 	}
 	
-	if order.Direction == model.OrderDirectionSell && listing.Asset != nil {
-		if err := s.validateSellOwnership(ctx, authCtx.IdentityID, ownerType, listing.AssetID, float64(order.Quantity)); err != nil {
+	if order.Direction == model.OrderDirectionSell && order.Listing.Asset != nil {
+		if err := s.validateSellOwnership(ctx, authCtx.IdentityID, ownerType, order.Listing.AssetID, float64(order.Quantity)); err != nil {
 			return nil, err
 		}
 	}
