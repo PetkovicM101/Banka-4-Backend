@@ -265,6 +265,11 @@ func Run(db *gorm.DB) error {
 		if err := db.Where("identity_id = ?", clientIdentity.ID).First(&traderClient).Error; err != nil {
 			return err
 		}
+		
+		var existingPerms model.ClientPermission
+		if err := db.Where("client_id = ?", traderClient.ClientID).First(&existingPerms).Error; err == nil {
+			continue // already seeded
+		}
 
 		perm := model.ClientPermission{
 			ClientID: traderClient.ClientID,
@@ -289,6 +294,11 @@ func Run(db *gorm.DB) error {
 		var traderClient model.Client
 		if err := db.Where("identity_id = ?", clientIdentity.ID).First(&traderClient).Error; err != nil {
 			return err
+		}
+		
+		var existingPerms model.ClientPermission
+		if err := db.Where("client_id = ?", traderClient.ClientID).First(&existingPerms).Error; err == nil {
+			continue // already seeded
 		}
 
 		perm := model.ClientPermission{

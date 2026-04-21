@@ -278,6 +278,20 @@ func (s *OrderService) ApproveOrder(ctx context.Context, orderID uint) (*model.O
 	if exchange == nil {
 		return nil, errors.NotFoundErr("exchange not found")
 	}
+	
+	if err := s.validateSettlementDate(ctx, &order.Listing); err != nil {
+		return nil, err
+	}
+	ownerType := model.OwnerTypeClient
+	if authCtx.IdentityType == auth.IdentityEmployee {
+		ownerType = model.OwnerTypeActuary
+	}
+	
+	if order.Direction == model.OrderDirectionSell && order.Listing.Asset != nil {
+		if err := s.validateSellOwnership(ctx, authCtx.IdentityID, ownerType, order.Listing.AssetID, float64(order.Quantity)); err != nil {
+			return nil, err
+		}
+	}
 
 	approverID := authCtx.IdentityID
 	nextExecutionAt := s.initialExecutionTime(s.resolveExchangeSession(exchange), order.AfterHours)
@@ -591,8 +605,21 @@ func (s *OrderService) resolveOrderStatus(ctx context.Context, authCtx *auth.Aut
 		return model.OrderStatusPending
 	}
 
+	exchange, err := s.exchangeRepo.FindByMicCode(ctx, order.Listing.ExchangeMIC)
+	if err != nil {
+		return model.OrderStatusPending
+	}
+	if exchange == nil {
+		return model.OrderStatusPending
+	}
+
 	orderValue := approximateOrderValue(order, dereferencePrice(order.PricePerUnit))
-	if orderValue > resp.OrderLimit-resp.UsedLimit {
+	orderValueRSD, err := s.bankingClient.ConvertCurrency(ctx, orderValue, exchange.Currency, "RSD")
+	if err != nil {
+		return model.OrderStatusPending
+	}
+
+	if orderValueRSD > resp.OrderLimit-resp.UsedLimit {
 		return model.OrderStatusPending
 	}
 
