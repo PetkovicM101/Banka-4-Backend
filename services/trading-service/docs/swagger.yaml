@@ -498,17 +498,17 @@ definitions:
     properties:
       amount:
         type: number
-      assetId:
+      asset_id:
         type: integer
-      avgBuyPrice:
+      avg_buy_price_rsd:
         type: number
-      lastModified:
+      last_modified:
         type: string
-      outstandingShares:
-        type: number
-      pricePerUnitRSD:
+      price_per_unit_rsd:
         type: number
       profit:
+        type: number
+      public_amount:
         type: number
       ticker:
         type: string
@@ -517,8 +517,15 @@ definitions:
     type: object
   dto.PortfolioProfitResponse:
     properties:
-      totalProfit:
+      total_profit_rsd:
         type: number
+    type: object
+  dto.PublishAssetRequest:
+    properties:
+      amount:
+        type: number
+    required:
+    - amount
     type: object
   dto.StockDetailedResponse:
     properties:
@@ -751,6 +758,52 @@ paths:
       summary: Get portfolio for an actuary/agent
       tags:
       - portfolio
+  /api/actuary/{actId}/assets/{ownershipId}/publish:
+    patch:
+      consumes:
+      - application/json
+      description: Appends the number of assets the caller makes publicly visible
+        on the OTC portal.
+      parameters:
+      - description: Asset ownership ID
+        in: path
+        name: ownershipId
+        required: true
+        type: integer
+      - description: Amount to make public
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PublishAssetRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Publish assets for OTC trading
+      tags:
+      - otc
   /api/actuary/{actId}/assets/profit:
     get:
       description: Returns the total accumulated profit across all currently held
@@ -927,6 +980,52 @@ paths:
       summary: Get portfolio for a client
       tags:
       - portfolio
+  /api/client/{clientId}/assets/{ownershipId}/publish:
+    patch:
+      consumes:
+      - application/json
+      description: Appends the number of assets the caller makes publicly visible
+        on the OTC portal.
+      parameters:
+      - description: Asset ownership ID
+        in: path
+        name: ownershipId
+        required: true
+        type: integer
+      - description: Amount to make public
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.PublishAssetRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Publish assets for OTC trading
+      tags:
+      - otc
   /api/client/{clientId}/assets/profit:
     get:
       description: Returns the total accumulated profit across all currently held
@@ -1631,6 +1730,40 @@ paths:
       summary: Decline a pending order
       tags:
       - orders
+  /api/otc/public:
+    get:
+      description: Returns a paginated list of assets that have been marked public
+        by their owners on the OTC portal.
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Page size (default 10)
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: List all publicly available OTC assets
+      tags:
+      - otc
   /api/tax:
     get:
       description: Returns a paginated list of clients and/or actuaries with their

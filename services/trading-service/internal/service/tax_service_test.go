@@ -150,10 +150,6 @@ func newTestTaxService(repo *fakeTaxRepo, banking *fakeBankingClient) *TaxServic
 	})
 }
 
-func uintPtr(v uint) *uint {
-	return &v
-}
-
 // ── RecordTax Tests ────────────────────────────────────────────────
 
 func TestRecordTax_SkipsNonPositiveProfit(t *testing.T) {

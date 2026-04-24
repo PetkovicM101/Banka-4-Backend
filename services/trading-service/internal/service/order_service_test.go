@@ -39,10 +39,12 @@ type fakeOrderRepo struct {
 	readyErr    error
 
 	// captured
-	capturedOrder *model.Order
+	capturedOrder  *model.Order
+	capturedUserID *uint
 }
 
-func (r *fakeOrderRepo) FindAll(_ context.Context, _, _ int, _ *uint, _ *model.OrderStatus, _ *model.OrderDirection, _ *bool) ([]model.Order, int64, error) {
+func (r *fakeOrderRepo) FindAll(_ context.Context, _, _ int, userID *uint, _ *model.OwnerType, _ *model.OrderStatus, _ *model.OrderDirection, _ *bool) ([]model.Order, int64, error) {
+	r.capturedUserID = userID
 	return r.orders, r.total, r.findErr
 }
 
@@ -107,10 +109,12 @@ type fakeListingRepo struct {
 	dailyPriceErr  error
 
 	// stubs for the rest of the interface
-	allListings []model.Listing
-	findAllErr  error
-	countVal    int64
-	countErr    error
+	allListings   []model.Listing
+	findAllErr    error
+	countVal      int64
+	countErr      error
+	byAssetIDs    []model.Listing
+	byAssetIDsErr error
 }
 
 func (r *fakeListingRepo) FindByID(_ context.Context, _ uint, daysBack int) (*model.Listing, error) {
@@ -160,7 +164,7 @@ func (r *fakeListingRepo) FindByAssetType(_ context.Context, _ model.AssetType) 
 }
 
 func (r *fakeListingRepo) FindByAssetIDs(_ context.Context, _ []uint) ([]model.Listing, error) {
-	return nil, nil
+	return r.byAssetIDs, r.byAssetIDsErr
 }
 
 // ── Fake User Service Client ──────────────────────────────────────
@@ -182,6 +186,14 @@ func (c *fakeUserServiceClient) GetClientById(_ context.Context, _ uint64) (*pb.
 	return c.clientResp, c.clientErr
 }
 
+func (c *fakeUserServiceClient) GetClientByIdentityId(_ context.Context, _ uint64) (*pb.GetClientByIdResponse, error) {
+	return c.clientResp, c.clientErr
+}
+
+func (c *fakeUserServiceClient) GetEmployeeByIdentityId(_ context.Context, _ uint64) (*pb.GetEmployeeByIdResponse, error) {
+	return c.employeeResp, c.employeeErr
+}
+
 func (c *fakeUserServiceClient) GetAllClients(_ context.Context, _, _ int32, _, _ string) (*pb.GetAllClientsResponse, error) {
 	return nil, nil
 }
@@ -197,13 +209,13 @@ func (c *fakeUserServiceClient) GetIdentityByUserId(_ context.Context, _ uint64,
 // ── Fake Banking Client (order-specific) ──────────────────────────
 
 type fakeOrderBankingClient struct {
-	accountResp     *pb.GetAccountByNumberResponse
-	accountErr      error
-  hasActiveLoan    bool
+	accountResp      *pb.GetAccountByNumberResponse
+	accountErr       error
+	hasActiveLoan    bool
 	hasActiveLoanErr error
-	settlementResp  *pb.ExecuteTradeSettlementResponse
-	settlementErr   error
-	accountCurrency string
+	settlementResp   *pb.ExecuteTradeSettlementResponse
+	settlementErr    error
+	accountCurrency  string
 }
 
 func (c *fakeOrderBankingClient) GetAccountCurrency(_ context.Context, _ string) (string, error) {
@@ -423,18 +435,30 @@ func TestCreateOrder_LimitSell_Success(t *testing.T) {
 	exchange := defaultExchange()
 	limitVal := 155.0
 
-	svc := newTestOrderService(
+	ownershipRepo := &fakeAssetOwnershipRepo{
+		ownerships: []model.AssetOwnership{
+			{AssetID: listing.AssetID, Amount: 10},
+		},
+	}
+	svc := NewOrderService(
 		&fakeOrderRepo{},
 		&fakeOrderTransactionRepo{},
 		&fakeExchangeRepo{exchange: exchange},
 		&fakeListingRepo{listing: listing},
+		ownershipRepo,
+		&fakeFuturesRepo{},
+		&fakeOptionRepo{},
 		&fakeUserServiceClient{identityResp: &pb.GetIdentityByUserIdResponse{IdentityId: 5}},
 		&fakeOrderBankingClient{accountResp: defaultAccountResp(10)},
 		&fakeTaxRecorder{},
 	)
+	svc.now = func() time.Time {
+		return time.Date(2025, 6, 4, 10, 0, 0, 0, time.UTC)
+	}
+
 	svc.assetOwnershipRepo = &fakeAssetOwnershipRepo{
 		ownerships: []model.AssetOwnership{
-			{AssetID: listing.AssetID, IdentityID: 1, OwnerType: model.OwnerTypeClient, Amount: 10},
+			{AssetID: listing.AssetID, UserId: 1, OwnerType: model.OwnerTypeClient, Amount: 10},
 		},
 	}
 	ctx := clientAuthCtx()
@@ -561,19 +585,9 @@ func TestCreateOrder_Margin_WithInsufficientFunds_Forbidden(t *testing.T) {
 	listing := defaultListing()
 	exchange := defaultExchange()
 
-	svc := newTestOrderService(
-		&fakeOrderRepo{},
-		&fakeOrderTransactionRepo{},
-		&fakeExchangeRepo{exchange: exchange},
-		&fakeListingRepo{listing: listing},
-		&fakeUserServiceClient{identityResp: &pb.GetIdentityByUserIdResponse{IdentityId: 5}},
-		&fakeOrderBankingClient{accountResp: defaultAccountResp(10), hasActiveLoan: true},
-		&fakeTaxRecorder{},
-	)
-
 	accountResp := defaultAccountResp(10)
 	accountResp.AvailableBalance = 10
-	svc = newTestOrderService(
+	svc := newTestOrderService(
 		&fakeOrderRepo{},
 		&fakeOrderTransactionRepo{},
 		&fakeExchangeRepo{exchange: exchange},

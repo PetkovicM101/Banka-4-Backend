@@ -50,23 +50,15 @@ func NewPortfolioService(
 }
 
 func (s *PortfolioService) GetClientPortfolio(ctx context.Context, clientID uint) ([]dto.PortfolioAssetResponse, error) {
-	resp, err := s.userClient.GetClientById(ctx, uint64(clientID))
-	if err != nil {
-		return nil, pkgerrors.NotFoundErr("client not found")
-	}
-	return s.GetPortfolio(ctx, uint(resp.IdentityId), model.OwnerTypeClient)
+	return s.GetPortfolio(ctx, uint(clientID), model.OwnerTypeClient)
 }
 
 func (s *PortfolioService) GetActuaryPortfolio(ctx context.Context, actuaryID uint) ([]dto.PortfolioAssetResponse, error) {
-	resp, err := s.userClient.GetEmployeeById(ctx, uint64(actuaryID))
-	if err != nil {
-		return nil, pkgerrors.NotFoundErr("actuary not found")
-	}
-	return s.GetPortfolio(ctx, uint(resp.IdentityId), model.OwnerTypeActuary)
+	return s.GetPortfolio(ctx, uint(actuaryID), model.OwnerTypeActuary)
 }
 
-func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ownerType model.OwnerType) ([]dto.PortfolioAssetResponse, error) {
-	ownerships, err := s.ownershipRepo.FindByIdentity(ctx, identityID, ownerType)
+func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerType model.OwnerType) ([]dto.PortfolioAssetResponse, error) {
+	ownerships, err := s.ownershipRepo.FindByUserId(ctx, userId, ownerType)
 	if err != nil {
 		return nil, pkgerrors.InternalErr(err)
 	}
@@ -87,9 +79,8 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 
 	// Determine asset types; listing is preloaded on each asset type
 	type assetMeta struct {
-		assetType         dto.AssetType
-		outstandingShares *float64
-		listing           *model.Listing
+		assetType dto.AssetType
+		listing   *model.Listing
 	}
 	meta := make(map[uint]assetMeta)
 
@@ -98,11 +89,9 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 		return nil, pkgerrors.InternalErr(err)
 	}
 	for _, st := range stocks {
-		shares := st.OutstandingShares
 		meta[st.AssetID] = assetMeta{
-			assetType:         dto.AssetTypeStock,
-			outstandingShares: &shares,
-			listing:           st.Listing,
+			assetType: dto.AssetTypeStock,
+			listing:   st.Listing,
 		}
 	}
 
@@ -163,15 +152,15 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, identityID uint, ow
 		}
 
 		result = append(result, dto.PortfolioAssetResponse{
-			AssetID:           o.AssetID,
-			Type:              m.assetType,
-			Ticker:            ticker,
-			Amount:            o.Amount,
-			PricePerUnitRSD:   currentPriceRSD,
-			AvgBuyPriceRSD:    o.AvgBuyPriceRSD,
-			LastModified:      o.UpdatedAt,
-			Profit:            profit,
-			OutstandingShares: m.outstandingShares,
+			AssetID:         o.AssetID,
+			Type:            m.assetType,
+			Ticker:          ticker,
+			Amount:          o.Amount,
+			PricePerUnitRSD: currentPriceRSD,
+			AvgBuyPriceRSD:  o.AvgBuyPriceRSD,
+			LastModified:    o.UpdatedAt,
+			Profit:          profit,
+			PublicAmount:    o.PublicAmount,
 		})
 	}
 
@@ -185,7 +174,7 @@ func (s *PortfolioService) toRSD(ctx context.Context, amount float64, currency s
 	return s.bankingClient.ConvertCurrency(ctx, amount, currency, "RSD")
 }
 
-func (s *PortfolioService) ExerciseOption(ctx context.Context, identityID uint, ownerType model.OwnerType, optionAssetID uint, accountNumber string) (*dto.ExerciseOptionResponse, error) {
+func (s *PortfolioService) ExerciseOption(ctx context.Context, userId uint, ownerType model.OwnerType, optionAssetID uint, accountNumber string) (*dto.ExerciseOptionResponse, error) {
 	if ownerType != model.OwnerTypeActuary {
 		return nil, pkgerrors.ForbiddenErr("only actuaries can exercise options")
 	}
@@ -202,7 +191,7 @@ func (s *PortfolioService) ExerciseOption(ctx context.Context, identityID uint, 
 		return nil, pkgerrors.BadRequestErr("employees must use a bank account")
 	}
 
-	ownerships, err := s.ownershipRepo.FindByIdentity(ctx, identityID, ownerType)
+	ownerships, err := s.ownershipRepo.FindByUserId(ctx, userId, ownerType)
 	if err != nil {
 		return nil, pkgerrors.InternalErr(err)
 	}
@@ -284,9 +273,9 @@ func (s *PortfolioService) ExerciseOption(ctx context.Context, identityID uint, 
 	stockOwnership := findOwnershipByAssetID(ownerships, option.Stock.AssetID)
 	if stockOwnership == nil {
 		stockOwnership = &model.AssetOwnership{
-			IdentityID: identityID,
-			OwnerType:  ownerType,
-			AssetID:    option.Stock.AssetID,
+			UserId:    userId,
+			OwnerType: ownerType,
+			AssetID:   option.Stock.AssetID,
 		}
 	}
 

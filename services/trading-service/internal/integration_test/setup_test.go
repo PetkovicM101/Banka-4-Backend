@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -113,6 +112,28 @@ func (f *fakeBankingClient) GetAccountCurrency(_ context.Context, _ string) (str
 }
 
 func (f *fakeUserClient) GetEmployeeById(_ context.Context, id uint64) (*pb.GetEmployeeByIdResponse, error) {
+	isSupervisor := f.supervisorIDs[id]
+	isAgent := f.agentIDs[id]
+	return &pb.GetEmployeeByIdResponse{
+		Id:           id,
+		Email:        fmt.Sprintf("employee-%d@example.com", id),
+		FullName:     fmt.Sprintf("Employee %d", id),
+		IsSupervisor: isSupervisor,
+		IsAgent:      isAgent,
+		IdentityId:   id,
+	}, nil
+}
+
+func (f *fakeUserClient) GetClientByIdentityId(_ context.Context, id uint64) (*pb.GetClientByIdResponse, error) {
+	return &pb.GetClientByIdResponse{
+		Id:         id,
+		Email:      fmt.Sprintf("client-%d@example.com", id),
+		FullName:   fmt.Sprintf("Client %d", id),
+		IdentityId: id,
+	}, nil
+}
+
+func (f *fakeUserClient) GetEmployeeByIdentityId(_ context.Context, id uint64) (*pb.GetEmployeeByIdResponse, error) {
 	isSupervisor := f.supervisorIDs[id]
 	isAgent := f.agentIDs[id]
 	return &pb.GetEmployeeByIdResponse{
@@ -253,7 +274,6 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	forexRepo := repository.NewForexRepository(db)
 	optionRepo := repository.NewOptionRepository(db)
 	taxRepo := repository.NewTaxRepository(db)
-
 	exchangeSvc := service.NewExchangeService(exchangeRepo)
 	listingSvc := service.NewListingService(listingRepo, futuresRepo, forexRepo, optionRepo)
 
@@ -262,6 +282,7 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	portfolioSvc := service.NewPortfolioService(assetOwnershipRepo, stockRepo, optionRepo, futuresRepo, forexRepo, bankingClient, userClient)
 
 	taxSvc := service.NewTaxService(taxRepo, bankingClient, cfg)
+	otcSvc := service.NewOTCService(assetOwnershipRepo, listingRepo, userClient)
 
 	healthHandler := handler.NewHealthHandler()
 	exchangeHandler := handler.NewExchangeHandler(exchangeSvc)
@@ -269,12 +290,13 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	orderHandler := handler.NewOrderHandler(orderSvc)
 	portfolioHandler := handler.NewPortfolioHandler(portfolioSvc)
 	taxHandler := handler.NewTaxHandler(taxSvc, userClient)
+	otcHandler := handler.NewOTCHandler(otcSvc)
 
 	verifier := auth.TokenVerifier(commonjwt.NewJWTVerifier(cfg.JWTSecret))
 
 	r := gin.New()
 	server.InitRouter(r, cfg)
-	server.SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, verifier, permProvider, userClient)
+	server.SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, verifier, permProvider, userClient)
 
 	return r, userClient
 }
@@ -442,23 +464,6 @@ func seedOrder(t *testing.T, db *gorm.DB, userID, listingID uint, direction mode
 	return order
 }
 
-func seedAssetOwnership(t *testing.T, db *gorm.DB, identityID uint, ownerType model.OwnerType, assetID uint, amount float64) *model.AssetOwnership {
-	t.Helper()
-
-	ownership := &model.AssetOwnership{
-		IdentityID: identityID,
-		OwnerType:  ownerType,
-		AssetID:    assetID,
-		Amount:     amount,
-	}
-
-	if err := db.Create(ownership).Error; err != nil {
-		t.Fatalf("seed asset ownership: %v", err)
-	}
-
-	return ownership
-}
-
 func seedDailyPriceInfo(t *testing.T, db *gorm.DB, listingID uint) {
 	t.Helper()
 
@@ -527,11 +532,7 @@ func authHeaderForClient(t *testing.T, identityID, clientID uint) string {
 
 func uniqueValue(t *testing.T, prefix string) string {
 	t.Helper()
-	name := strings.NewReplacer("/", "-", " ", "-", ":", "-").Replace(strings.ToLower(t.Name()))
-	if len(name) > 15 {
-		name = name[:15]
-	}
-	return fmt.Sprintf("%s-%s-%d-%d", prefix, name, time.Now().UnixNano(), uniqueCounter.Add(1))
+	return fmt.Sprintf("%s%d", prefix, uniqueCounter.Add(1))
 }
 
 func performRequest(t *testing.T, router *gin.Engine, method, path string, body any, authorization string) *httptest.ResponseRecorder {

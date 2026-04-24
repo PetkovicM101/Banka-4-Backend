@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"math/rand"
@@ -132,7 +133,7 @@ func (s *OrderService) Stop() {
 }
 
 func (s *OrderService) GetOrders(ctx context.Context, query dto.ListOrdersQuery) ([]model.Order, int64, error) {
-	orders, total, err := s.orderRepo.FindAll(ctx, query.Page, query.PageSize, nil, query.Status, query.Direction, query.IsDone)
+	orders, total, err := s.orderRepo.FindAll(ctx, query.Page, query.PageSize, nil, nil, query.Status, query.Direction, query.IsDone)
 	if err != nil {
 		return nil, 0, errors.InternalErr(err)
 	}
@@ -189,7 +190,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req dto.CreateOrderReque
 	}
 
 	if req.Direction == model.OrderDirectionSell && listing.Asset != nil {
-		if err := s.validateSellOwnership(ctx, authCtx.IdentityID, ownerType, listing.AssetID, float64(req.Quantity)); err != nil {
+		if err := s.validateSellOwnership(ctx, *userID, ownerType, listing.AssetID, float64(req.Quantity)); err != nil {
 			return nil, err
 		}
 	}
@@ -296,7 +297,7 @@ func (s *OrderService) ApproveOrder(ctx context.Context, orderID uint) (*model.O
 	approverID := authCtx.IdentityID
 	nextExecutionAt := s.initialExecutionTime(s.resolveExchangeSession(exchange), order.AfterHours)
 	order.Status = model.OrderStatusApproved
-	order.ApprovedBy = &approverID
+	order.ApprovedBy = &approverID //TODO careful
 	order.NextExecutionAt = &nextExecutionAt
 	order.UpdatedAt = s.now()
 
@@ -324,7 +325,7 @@ func (s *OrderService) DeclineOrder(ctx context.Context, orderID uint) (*model.O
 		return nil, errors.UnauthorizedErr("not authenticated")
 	}
 
-	approverID := authCtx.IdentityID
+	approverID := authCtx.IdentityID //TODO careful
 	order.Status = model.OrderStatusDeclined
 	order.ApprovedBy = &approverID
 	order.IsDone = true
@@ -527,19 +528,13 @@ func (s *OrderService) processOrder(ctx context.Context, order *model.Order) err
 
 func (s *OrderService) updateAssetOwnership(ctx context.Context, order *model.Order, fillQty uint, pricePerUnit float64, currency string) error {
 	if order.Listing.Asset == nil {
-		return nil
+		return fmt.Errorf("listing %d has no asset", order.ListingID)
 	}
-
-	resp, err := s.userClient.GetIdentityByUserId(ctx, uint64(order.UserID), string(order.OwnerType))
-	if err != nil {
-		return errors.InternalErr(err)
-	}
-	identityID := uint(resp.IdentityId)
 
 	fillAmount := float64(fillQty) * order.ContractSize
 	assetID := order.Listing.AssetID
 
-	existing, err := s.assetOwnershipRepo.FindByIdentity(ctx, identityID, order.OwnerType)
+	existing, err := s.assetOwnershipRepo.FindByUserId(ctx, order.UserID, order.OwnerType)
 	if err != nil {
 		return err
 	}
@@ -554,9 +549,9 @@ func (s *OrderService) updateAssetOwnership(ctx context.Context, order *model.Or
 
 	if ownership == nil {
 		ownership = &model.AssetOwnership{
-			IdentityID: identityID,
-			OwnerType:  order.OwnerType,
-			AssetID:    assetID,
+			UserId:    order.UserID,
+			OwnerType: order.OwnerType,
+			AssetID:   assetID,
 		}
 	}
 
@@ -626,8 +621,8 @@ func (s *OrderService) resolveOrderStatus(ctx context.Context, authCtx *auth.Aut
 	return model.OrderStatusApproved
 }
 
-func (s *OrderService) validateSellOwnership(ctx context.Context, identityID uint, ownerType model.OwnerType, assetID uint, quantity float64) error {
-	ownerships, err := s.assetOwnershipRepo.FindByIdentity(ctx, identityID, ownerType)
+func (s *OrderService) validateSellOwnership(ctx context.Context, userId uint, ownerType model.OwnerType, assetID uint, quantity float64) error {
+	ownerships, err := s.assetOwnershipRepo.FindByUserId(ctx, userId, ownerType)
 	if err != nil {
 		return errors.InternalErr(err)
 	}
@@ -1053,6 +1048,10 @@ func (s *OrderService) recordProfitTax(ctx context.Context, order *model.Order, 
 	fillAmount := float64(fillQty) * order.ContractSize
 
 	AvgBuyPriceTradeCurrency, err := s.bankingClient.ConvertCurrency(ctx, ownership.AvgBuyPriceRSD, "RSD", tradeCurrency)
+	if err != nil {
+		return err
+	}
+
 	profitInTradeCurrency := (pricePerUnit - AvgBuyPriceTradeCurrency) * fillAmount
 	if profitInTradeCurrency <= 0 {
 		return nil
@@ -1079,14 +1078,8 @@ func (s *OrderService) getOwnershipForOrder(ctx context.Context, order *model.Or
 	if order.Listing.Asset == nil {
 		return nil, nil
 	}
-	
-	resp, err := s.userClient.GetIdentityByUserId(ctx, uint64(order.UserID), string(order.OwnerType))
-	if err != nil {
-		return nil, errors.InternalErr(err)
-	}
-	identityID := uint(resp.IdentityId)
 
-	existing, err := s.assetOwnershipRepo.FindByIdentity(ctx, identityID, order.OwnerType)
+	existing, err := s.assetOwnershipRepo.FindByUserId(ctx, order.UserID, order.OwnerType)
 	if err != nil {
 		return nil, err
 	}

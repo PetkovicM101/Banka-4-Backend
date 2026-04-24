@@ -8,8 +8,8 @@ import (
 
 	pkgerrors "github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/errors"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
-	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/service"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/service"
 )
 
 type PortfolioHandler struct {

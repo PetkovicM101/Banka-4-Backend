@@ -25,12 +25,12 @@ import (
 	_ "github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/docs"
 )
 
-func NewServer(lc fx.Lifecycle, cfg *config.Configuration, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
+func NewServer(lc fx.Lifecycle, cfg *config.Configuration, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, otcHandler *handler.OTCHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
 	r := gin.New()
 
 	InitRouter(r, cfg)
 
-	SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, verifier, permProvider, userClient)
+	SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, verifier, permProvider, userClient)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -58,7 +58,7 @@ func InitRouter(r *gin.Engine, cfg *config.Configuration) {
 	validator.RegisterValidators()
 }
 
-func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
+func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, otcHandler *handler.OTCHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api")
@@ -115,6 +115,8 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 			client.GET("/:clientId/assets", portfolioHandler.GetClientPortfolio)
 			client.GET("/:clientId/assets/profit", portfolioHandler.GetClientPortfolioProfit)
 			client.GET("/:clientId/accumulated-tax", taxHandler.GetClientAccumulatedTax)
+			client.PATCH("/:clientId/assets/:ownershipId/publish", otcHandler.PublishAssetClient)
+
 		}
 
 		actuary := api.Group("/actuary")
@@ -124,6 +126,14 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 			actuary.GET("/:actId/assets/profit", portfolioHandler.GetActuaryPortfolioProfit)
 			actuary.GET("/:actId/accumulated-tax", taxHandler.GetActuaryAccumulatedTax)
 			actuary.POST("/:actId/options/:assetId/exercise", portfolioHandler.ExerciseOption)
+			actuary.PATCH("/:actId/assets/:ownershipId/publish", otcHandler.PublishAssetActuary)
+
+		}
+
+		otc := api.Group("/otc")
+		otc.Use(auth.Middleware(verifier, permProvider))
+		{
+			otc.GET("/public", otcHandler.GetPublicOTCAssets)
 		}
 
 		orders := api.Group("/orders")

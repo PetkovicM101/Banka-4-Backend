@@ -98,6 +98,8 @@ func main() {
 			service.NewTaxService,
 			handler.NewTaxHandler,
 			service.NewTaxScheduler,
+			service.NewOTCService,
+			handler.NewOTCHandler,
 		),
 		fx.Invoke(func(cfg *config.Configuration) error {
 			return logging.Init(cfg.Env)
@@ -176,9 +178,9 @@ func main() {
 			go func() {
 				time.Sleep(1 * time.Minute)
 				if err := seed.SeedDailyPriceHistory(db, 365); err != nil {
-						log.Printf("Failed to seed daily price history after delay: %v", err)
+					log.Printf("Failed to seed daily price history after delay: %v", err)
 				} else {
-						log.Println("Daily price history seeded successfully")
+					log.Println("Daily price history seeded successfully")
 				}
 			}()
 		}),

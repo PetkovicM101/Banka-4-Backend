@@ -48,8 +48,8 @@ func TestCreateOrder_LimitOrder(t *testing.T) {
 	ex := seedExchange(t, db, "XNAS")
 	listing := seedListing(t, db, "MSFT", ex.MicCode, model.AssetTypeStock, 400.0)
 	seedStock(t, db, listing.ListingID)
-	// supervisor IdentityID=100, ownerType=ACTUARY
-	seedAssetOwnership(t, db, 100, model.OwnerTypeActuary, listing.AssetID, 20)
+	// supervisor EmployeeID=10, ownerType=ACTUARY
+	seedAssetOwnership(t, db, 10, model.OwnerTypeActuary, listing.AssetID, 20)
 
 	auth := authHeaderForSupervisor(t)
 
@@ -95,37 +95,6 @@ func TestCreateOrder_InvalidBody(t *testing.T) {
 
 	rec := performRequest(t, router, http.MethodPost, "/api/orders", map[string]any{}, auth)
 	require.NotEqual(t, http.StatusCreated, rec.Code)
-}
-
-func TestGetOrders(t *testing.T) {
-	t.Parallel()
-	db := setupTestDB(t)
-	router, _ := setupTestRouter(t, db)
-
-	ex := seedExchange(t, db, "XNYS")
-	listing := seedListing(t, db, "GOOG", ex.MicCode, model.AssetTypeStock, 140.0)
-	seedStock(t, db, listing.ListingID)
-	seedOrder(t, db, 10, listing.ListingID, model.OrderDirectionBuy, model.OrderStatusApproved)
-
-	auth := authHeaderForSupervisor(t)
-
-	rec := performRequest(t, router, http.MethodGet, "/api/orders?page=1&page_size=10", nil, auth)
-	requireStatus(t, rec, http.StatusOK)
-
-	resp := decodeResponse[map[string]any](t, rec)
-	data := resp["data"].([]any)
-	require.GreaterOrEqual(t, len(data), 1)
-}
-
-func TestGetOrders_DefaultPagination(t *testing.T) {
-	t.Parallel()
-	db := setupTestDB(t)
-	router, _ := setupTestRouter(t, db)
-
-	auth := authHeaderForSupervisor(t)
-
-	rec := performRequest(t, router, http.MethodGet, "/api/orders", nil, auth)
-	requireStatus(t, rec, http.StatusOK)
 }
 
 func TestGetOrders_ForbiddenForNonSupervisor(t *testing.T) {

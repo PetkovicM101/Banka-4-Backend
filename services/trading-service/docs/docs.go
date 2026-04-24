@@ -198,6 +198,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/actuary/{actId}/assets/{ownershipId}/publish": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Appends the number of assets the caller makes publicly visible on the OTC portal.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otc"
+                ],
+                "summary": "Publish assets for OTC trading",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ownership ID",
+                        "name": "ownershipId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Amount to make public",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PublishAssetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/actuary/{actId}/options/{assetId}/exercise": {
             "post": {
                 "security": [
@@ -430,6 +500,76 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/dto.PortfolioProfitResponse"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/client/{clientId}/assets/{ownershipId}/publish": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Appends the number of assets the caller makes publicly visible on the OTC portal.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otc"
+                ],
+                "summary": "Publish assets for OTC trading",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ownership ID",
+                        "name": "ownershipId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Amount to make public",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PublishAssetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
                     },
                     "400": {
                         "description": "Bad Request",
@@ -1470,6 +1610,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/otc/public": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a paginated list of assets that have been marked public by their owners on the OTC portal.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otc"
+                ],
+                "summary": "List all publicly available OTC assets",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/tax": {
             "get": {
                 "security": [
@@ -2343,22 +2535,22 @@ const docTemplate = `{
                 "amount": {
                     "type": "number"
                 },
-                "assetId": {
+                "asset_id": {
                     "type": "integer"
                 },
-                "avgBuyPrice": {
+                "avg_buy_price_rsd": {
                     "type": "number"
                 },
-                "lastModified": {
+                "last_modified": {
                     "type": "string"
                 },
-                "outstandingShares": {
-                    "type": "number"
-                },
-                "pricePerUnitRSD": {
+                "price_per_unit_rsd": {
                     "type": "number"
                 },
                 "profit": {
+                    "type": "number"
+                },
+                "public_amount": {
                     "type": "number"
                 },
                 "ticker": {
@@ -2372,7 +2564,18 @@ const docTemplate = `{
         "dto.PortfolioProfitResponse": {
             "type": "object",
             "properties": {
-                "totalProfit": {
+                "total_profit_rsd": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.PublishAssetRequest": {
+            "type": "object",
+            "required": [
+                "amount"
+            ],
+            "properties": {
+                "amount": {
                     "type": "number"
                 }
             }
