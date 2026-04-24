@@ -48,7 +48,7 @@ func (m *mockListingRepo) FindFutures(ctx context.Context, filter repository.Lis
 func (m *mockListingRepo) FindOptions(ctx context.Context, filter repository.ListingFilter) ([]model.Listing, int64, error) {
 	return nil, 0, nil
 }
-func (m *mockListingRepo) FindByID(ctx context.Context, id uint) (*model.Listing, error) {
+func (m *mockListingRepo) FindByID(ctx context.Context, id uint, daysBack int) (*model.Listing, error) {
 	return nil, nil
 }
 func (m *mockListingRepo) Upsert(ctx context.Context, listing *model.Listing) error { return nil }
@@ -56,7 +56,11 @@ func (m *mockListingRepo) UpdatePriceAndAsk(ctx context.Context, listing *model.
 	return nil
 }
 func (m *mockListingRepo) Count(ctx context.Context) (int64, error) { return 0, nil }
-func (m *mockListingRepo) FindByType(ctx context.Context, typ model.ListingType) ([]model.Listing, error) {
+func (m *mockListingRepo) FindByAssetType(ctx context.Context, typ model.AssetType) ([]model.Listing, error) {
+	return nil, nil
+}
+
+func (m *mockListingRepo) FindByAssetIDs(ctx context.Context, assetIDs []uint) ([]model.Listing, error) {
 	return nil, nil
 }
 
@@ -77,8 +81,8 @@ func TestDailyPriceJob_Run(t *testing.T) {
 		{
 			name: "happy path - stocks and forex",
 			listings: []model.Listing{
-				{ListingID: 1, ListingType: model.ListingTypeStock, Price: 150.0, Ask: 151.0},
-				{ListingID: 2, ListingType: model.ListingTypeForexPair, Price: 1.20, Ask: 1.21},
+				{ListingID: 1, Price: 150.0, Ask: 151.0},
+				{ListingID: 2, Price: 1.20, Ask: 1.21},
 			},
 			expectedListingInfos: 2,
 		},

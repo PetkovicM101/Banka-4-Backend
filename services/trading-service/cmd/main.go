@@ -64,6 +64,8 @@ func main() {
 				return permission.NewGrpcPermissionProvider(c)
 			},
 			handler.NewHealthHandler,
+			repository.NewAssetRepository,
+			repository.NewAssetOwnershipRepository,
 			repository.NewForexRepository,
 			func(cfg *config.Configuration) client.ExchangeRateClient {
 				return client.NewExchangeRateClient(cfg.ExchangeRateAPIKey)
@@ -82,18 +84,22 @@ func main() {
 			handler.NewExchangeHandler,
 			service.NewListingService,
 			handler.NewListingHandler,
-			repository.NewOrderOwnershipRepository,
 			repository.NewFuturesContractRepository,
 			service.NewPortfolioService,
 			handler.NewPortfolioHandler,
 			repository.NewOrderRepository,
 			repository.NewOrderTransactionRepository,
 			service.NewOrderService,
+			func(svc *service.TaxService) service.TaxRecorder {
+				return svc
+			},
 			handler.NewOrderHandler,
 			repository.NewTaxRepository,
 			service.NewTaxService,
 			handler.NewTaxHandler,
 			service.NewTaxScheduler,
+			service.NewOTCService,
+			handler.NewOTCHandler,
 		),
 		fx.Invoke(func(cfg *config.Configuration) error {
 			return logging.Init(cfg.Env)
@@ -109,12 +115,13 @@ func main() {
 		}),
 		fx.Invoke(func(db *gorm.DB) error {
 			return db.AutoMigrate(
+				&model.Asset{},
 				&model.Listing{},
 				&model.Stock{},
 				&model.Option{},
 				&model.ListingDailyPriceInfo{},
 				&model.Order{},
-				&model.OrderOwnership{},
+				&model.AssetOwnership{},
 				&model.OrderTransaction{},
 				&model.ForexPair{},
 				&model.FuturesContract{},
@@ -166,6 +173,16 @@ func main() {
 					return nil
 				},
 			})
+		}),
+		fx.Invoke(func(db *gorm.DB) {
+			go func() {
+				time.Sleep(1 * time.Minute)
+				if err := seed.SeedDailyPriceHistory(db, 365); err != nil {
+					log.Printf("Failed to seed daily price history after delay: %v", err)
+				} else {
+					log.Println("Daily price history seeded successfully")
+				}
+			}()
 		}),
 		fx.Invoke(func(lc fx.Lifecycle, dailyJob *job.DailyPriceJob) {
 			c := cron.New(cron.WithLocation(time.UTC))

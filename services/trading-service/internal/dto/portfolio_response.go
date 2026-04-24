@@ -12,11 +12,17 @@ const (
 )
 
 type PortfolioAssetResponse struct {
-	Type              AssetType `json:"type"`
-	Ticker            string    `json:"ticker"`
-	Amount            float64   `json:"amount"`
-	PricePerUnit      float64   `json:"pricePerUnit"`
-	LastModified      time.Time `json:"lastModified"`
-	Profit            float64   `json:"profit"`
-	OutstandingShares *float64  `json:"outstandingShares,omitempty"`
+	AssetID         uint      `json:"asset_id"`
+	Type            AssetType `json:"type"`
+	Ticker          string    `json:"ticker"`
+	Amount          float64   `json:"amount"`
+	PricePerUnitRSD float64   `json:"price_per_unit_rsd"`
+	AvgBuyPriceRSD  float64   `json:"avg_buy_price_rsd"`
+	LastModified    time.Time `json:"last_modified"`
+	Profit          float64   `json:"profit"`
+	PublicAmount    float64   `json:"public_amount"`
+}
+
+type PortfolioProfitResponse struct {
+	TotalProfitRSD float64 `json:"total_profit_rsd"`
 }

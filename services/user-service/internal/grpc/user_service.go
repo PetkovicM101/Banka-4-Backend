@@ -35,9 +35,10 @@ func (s *UserService) GetClientById(ctx context.Context, req *pb.GetClientByIdRe
 		return nil, status.Errorf(codes.NotFound, "client %d not found", req.Id)
 	}
 	return &pb.GetClientByIdResponse{
-		Id:       uint64(client.ClientID),
-		Email:    client.Identity.Email,
-		FullName: client.FirstName + " " + client.LastName,
+		Id:         uint64(client.ClientID),
+		Email:      client.Identity.Email,
+		FullName:   client.FirstName + " " + client.LastName,
+		IdentityId: uint64(client.IdentityID),
 	}, nil
 }
 
@@ -55,6 +56,7 @@ func (s *UserService) GetEmployeeById(ctx context.Context, req *pb.GetEmployeeBy
 		FullName:     employee.FirstName + " " + employee.LastName,
 		IsSupervisor: employee.IsSupervisor(),
 		IsAgent:      employee.IsAgent(),
+		IdentityId:   uint64(employee.IdentityID),
 	}
 
 	if employee.ActuaryInfo != nil {
@@ -65,6 +67,46 @@ func (s *UserService) GetEmployeeById(ctx context.Context, req *pb.GetEmployeeBy
 
 	return resp, nil
 }
+func (s *UserService) GetClientByIdentityID(ctx context.Context, req *pb.GetClientByIdentityIdRequest) (*pb.GetClientByIdResponse, error) {
+	client, err := s.clientRepo.FindByIdentityID(ctx, uint(req.IdentityId))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch client: %v", err)
+	}
+	if client == nil {
+		return nil, status.Errorf(codes.NotFound, "client with user_id %d not found", req.IdentityId)
+	}
+	return &pb.GetClientByIdResponse{
+		Id:         uint64(client.ClientID),
+		Email:      client.Identity.Email,
+		FullName:   client.FirstName + " " + client.LastName,
+		IdentityId: uint64(client.IdentityID),
+	}, nil
+}
+
+func (s *UserService) GetEmployeeByIdentityID(ctx context.Context, req *pb.GetEmployeeByIdentityIdRequest) (*pb.GetEmployeeByIdResponse, error) {
+	employee, err := s.employeeRepo.FindByIdentityID(ctx, uint(req.IdentityId))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to fetch employee: %v", err)
+	}
+	if employee == nil {
+		return nil, status.Errorf(codes.NotFound, "employee with user_id %d not found", req.IdentityId)
+	}
+	resp := &pb.GetEmployeeByIdResponse{
+		Id:           uint64(employee.EmployeeID),
+		Email:        employee.Identity.Email,
+		FullName:     employee.FirstName + " " + employee.LastName,
+		IsSupervisor: employee.IsSupervisor(),
+		IsAgent:      employee.IsAgent(),
+		IdentityId:   uint64(employee.IdentityID),
+	}
+	if employee.ActuaryInfo != nil {
+		resp.NeedApproval = employee.ActuaryInfo.NeedApproval
+		resp.OrderLimit = employee.ActuaryInfo.Limit
+		resp.UsedLimit = employee.ActuaryInfo.UsedLimit
+	}
+	return resp, nil
+}
+
 func (s *UserService) GetAllClients(ctx context.Context, req *pb.GetAllClientsRequest) (*pb.GetAllClientsResponse, error) {
 	query := &dto.ListClientsQuery{
 		FirstName: req.FirstName,
@@ -127,4 +169,38 @@ func (s *UserService) GetAllActuaries(ctx context.Context, req *pb.GetAllActuari
 		PageSize:   int32(result.PageSize),
 		TotalPages: int32(result.TotalPages),
 	}, nil
+}
+
+func (s *UserService) GetIdentityByUserId(ctx context.Context, req *pb.GetIdentityByUserIdRequest) (*pb.GetIdentityByUserIdResponse, error) {
+	var identityID uint
+
+	switch userType := req.UserType; userType {
+	case "ACTUARY":
+		employee, err := s.employeeRepo.FindByID(ctx, uint(req.UserId))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch employee: %v", err)
+		}
+		if employee == nil {
+			return nil, status.Errorf(codes.NotFound, "employee %d not found", req.UserId)
+		}
+		identityID = employee.Identity.ID
+	case "CLIENT":
+		client, err := s.clientRepo.FindByID(ctx, uint(req.UserId))
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to fetch client: %v", err)
+		}
+		if client == nil {
+			return nil, status.Errorf(codes.NotFound, "client %d not found", req.UserId)
+		}
+		identityID = client.Identity.ID
+	default:
+		return nil, status.Errorf(codes.Internal, "wrong user type: %s", userType)
+
+	}
+
+	resp := &pb.GetIdentityByUserIdResponse{
+		IdentityId: uint64(identityID),
+	}
+
+	return resp, nil
 }

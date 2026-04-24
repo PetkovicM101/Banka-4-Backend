@@ -20,6 +20,7 @@ import (
 type BankingService struct {
 	pb.UnimplementedBankingServiceServer
 	accountRepo          repository.AccountRepository
+	loanRepo             repository.LoanRepository
 	paymentService       *service.PaymentService
 	transactionRepo      repository.TransactionRepository
 	transactionProcessor *service.TransactionProcessor
@@ -28,6 +29,7 @@ type BankingService struct {
 
 func NewBankingService(
 	accountRepo repository.AccountRepository,
+	loanRepo repository.LoanRepository,
 	paymentService *service.PaymentService,
 	transactionRepo repository.TransactionRepository,
 	transactionProcessor *service.TransactionProcessor,
@@ -35,6 +37,7 @@ func NewBankingService(
 ) *BankingService {
 	return &BankingService{
 		accountRepo:          accountRepo,
+		loanRepo:             loanRepo,
 		paymentService:       paymentService,
 		transactionRepo:      transactionRepo,
 		transactionProcessor: transactionProcessor,
@@ -57,6 +60,15 @@ func (s *BankingService) GetAccountByNumber(ctx context.Context, req *pb.GetAcco
 		CurrencyCode:     string(account.Currency.Code),
 		AvailableBalance: account.AvailableBalance,
 	}, nil
+}
+
+func (s *BankingService) HasActiveLoan(ctx context.Context, req *pb.HasActiveLoanRequest) (*pb.HasActiveLoanResponse, error) {
+	hasActiveLoan, err := s.loanRepo.HasActiveByClientID(ctx, uint(req.GetClientId()))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check active loans: %v", err)
+	}
+
+	return &pb.HasActiveLoanResponse{HasActiveLoan: hasActiveLoan}, nil
 }
 
 func (s *BankingService) CreatePaymentWithoutVerification(ctx context.Context, req *pb.CreatePaymentRequest) (*pb.CreatePaymentResponse, error) {

@@ -9,6 +9,7 @@ import (
 type OrderResponse struct {
 	OrderID           uint                 `json:"order_id"`
 	UserID            uint                 `json:"user_id"`
+	OwnerType         model.OwnerType      `json:"owner_type"`
 	AccountNumber     string               `json:"account_number"`
 	ListingID         uint                 `json:"listing_id"`
 	Ticker            string               `json:"ticker"`
@@ -31,14 +32,36 @@ type OrderResponse struct {
 	UpdatedAt         time.Time            `json:"updated_at"`
 }
 
+func listingAssetTicker(l model.Listing) string {
+	if l.Asset != nil {
+		return l.Asset.Ticker
+	}
+	return ""
+}
+
+func listingAssetName(l model.Listing) string {
+	if l.Asset != nil {
+		return l.Asset.Name
+	}
+	return ""
+}
+
+func listingAssetType(l model.Listing) model.AssetType {
+	if l.Asset != nil {
+		return l.Asset.AssetType
+	}
+	return ""
+}
+
 func ToOrderResponse(o model.Order) OrderResponse {
 	return OrderResponse{
 		OrderID:           o.OrderID,
 		UserID:            o.UserID,
+		OwnerType:         o.OwnerType,
 		AccountNumber:     o.AccountNumber,
 		ListingID:         o.ListingID,
-		Ticker:            o.Listing.Ticker,
-		ListingName:       o.Listing.Name,
+		Ticker:            listingAssetTicker(o.Listing),
+		ListingName:       listingAssetName(o.Listing),
 		OrderType:         o.OrderType,
 		Direction:         o.Direction,
 		Quantity:          o.Quantity,

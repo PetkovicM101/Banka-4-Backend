@@ -148,23 +148,23 @@ func hasPermission(perm permission.Permission, permissions []permission.Permissi
 			return true
 		}
 	}
+
 	return false
 }
 
 func AnyOf(middlewares ...gin.HandlerFunc) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		for _, m := range middlewares {
-			probe, _ := gin.CreateTestContext(httptest.NewRecorder())
+			probeRecorder := httptest.NewRecorder()
+			probe, _ := gin.CreateTestContext(probeRecorder)
 			probe.Request = c.Request
-			probe.Params = c.Params
 
-			if authCtx := GetAuth(c); authCtx != nil {
-				SetAuth(probe, authCtx)
+			for key, value := range c.Keys {
+				probe.Set(key, value)
 			}
 
 			m(probe)
 			if !probe.IsAborted() {
-				// one middleware passed, let original context continue
 				c.Next()
 				return
 			}

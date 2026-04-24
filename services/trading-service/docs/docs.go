@@ -119,6 +119,229 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.AppError"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/actuary/{actId}/assets/profit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the total accumulated profit across all currently held asset positions for an actuary.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Get total profit for an actuary portfolio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Actuary ID",
+                        "name": "actId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PortfolioProfitResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/actuary/{actId}/assets/{ownershipId}/publish": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Appends the number of assets the caller makes publicly visible on the OTC portal.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otc"
+                ],
+                "summary": "Publish assets for OTC trading",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ownership ID",
+                        "name": "ownershipId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Amount to make public",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PublishAssetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/actuary/{actId}/options/{assetId}/exercise": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Exercises one contract of an actuary-owned in-the-money call option and buys the underlying stock at the strike price.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Exercise an owned option",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Actuary ID",
+                        "name": "actId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Option asset ID",
+                        "name": "assetId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Exercise request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExerciseOptionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ExerciseOptionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -232,6 +455,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.AppError"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -241,7 +470,141 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/exchange": {
+        "/api/client/{clientId}/assets/profit": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the total accumulated profit across all currently held asset positions for a client.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "portfolio"
+                ],
+                "summary": "Get total profit for a client portfolio",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.PortfolioProfitResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/client/{clientId}/assets/{ownershipId}/publish": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Appends the number of assets the caller makes publicly visible on the OTC portal.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "otc"
+                ],
+                "summary": "Publish assets for OTC trading",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Asset ownership ID",
+                        "name": "ownershipId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Amount to make public",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.PublishAssetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/exchanges": {
             "get": {
                 "description": "Returns a paginated list of all stock exchanges",
                 "produces": [
@@ -294,7 +657,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/exchange/{micCode}/toggle": {
+        "/api/exchanges/{micCode}/toggle": {
             "patch": {
                 "description": "Enables or disables trading time enforcement for a specific exchange (for testing purposes)",
                 "produces": [
@@ -452,6 +815,12 @@ const docTemplate = `{
                         "name": "listingId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "History range in days",
+                        "name": "days",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -624,6 +993,12 @@ const docTemplate = `{
                         "name": "listingId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "History range in days",
+                        "name": "days",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -796,6 +1171,12 @@ const docTemplate = `{
                         "name": "listingId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "History range in days",
+                        "name": "days",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -826,7 +1207,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/listings/stock/listingId": {
+        "/api/listings/stock/{listingId}": {
             "get": {
                 "security": [
                     {
@@ -851,6 +1232,12 @@ const docTemplate = `{
                         "name": "listingId",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "History range in days",
+                        "name": "days_back",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1223,26 +1610,41 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/tax/collect": {
-            "post": {
+        "/api/otc/public": {
+            "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Runs the tax collection process for all users. Restricted to authorized personnel.",
+                "description": "Returns a paginated list of assets that have been marked public by their owners on the OTC portal.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "tax"
+                    "otc"
                 ],
-                "summary": "Trigger tax collection",
+                "summary": "List all publicly available OTC assets",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size (default 10)",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.CollectTaxesResponse"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
@@ -1251,8 +1653,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/errors.AppError"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
                         }
@@ -1260,7 +1662,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/tax/users": {
+        "/api/tax": {
             "get": {
                 "security": [
                     {
@@ -1321,6 +1723,43 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/tax/collect": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Runs the tax collection process for all users. Restricted to authorized personnel.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tax"
+                ],
+                "summary": "Trigger tax collection",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CollectTaxesResponse"
                         }
                     },
                     "401": {
@@ -1476,6 +1915,58 @@ const docTemplate = `{
                 },
                 "trading_enabled": {
                     "type": "boolean"
+                }
+            }
+        },
+        "dto.ExerciseOptionRequest": {
+            "type": "object",
+            "required": [
+                "account_number"
+            ],
+            "properties": {
+                "account_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ExerciseOptionResponse": {
+            "type": "object",
+            "properties": {
+                "destination_amount": {
+                    "type": "number"
+                },
+                "destination_currency_code": {
+                    "type": "string"
+                },
+                "exercised_contracts": {
+                    "type": "integer"
+                },
+                "option_asset_id": {
+                    "type": "integer"
+                },
+                "purchased_shares": {
+                    "type": "number"
+                },
+                "remaining_contracts": {
+                    "type": "integer"
+                },
+                "remaining_option_shares": {
+                    "type": "number"
+                },
+                "source_amount": {
+                    "type": "number"
+                },
+                "source_currency_code": {
+                    "type": "string"
+                },
+                "stock_asset_id": {
+                    "type": "integer"
+                },
+                "strike_price": {
+                    "type": "number"
+                },
+                "total_cost": {
+                    "type": "number"
                 }
             }
         },
@@ -1885,6 +2376,9 @@ const docTemplate = `{
                 "order_type": {
                     "$ref": "#/definitions/model.OrderType"
                 },
+                "owner_type": {
+                    "$ref": "#/definitions/model.OwnerType"
+                },
                 "price_per_unit": {
                     "type": "number"
                 },
@@ -1914,6 +2408,12 @@ const docTemplate = `{
         "dto.OrderSummaryResponse": {
             "type": "object",
             "properties": {
+                "account_number": {
+                    "type": "string"
+                },
+                "asset_type": {
+                    "$ref": "#/definitions/model.AssetType"
+                },
                 "contract_size": {
                     "type": "number"
                 },
@@ -1925,6 +2425,12 @@ const docTemplate = `{
                 },
                 "order_id": {
                     "type": "integer"
+                },
+                "order_type": {
+                    "$ref": "#/definitions/model.OrderType"
+                },
+                "owner_type": {
+                    "$ref": "#/definitions/model.OwnerType"
                 },
                 "price_per_unit": {
                     "type": "number"
@@ -2029,16 +2535,22 @@ const docTemplate = `{
                 "amount": {
                     "type": "number"
                 },
-                "lastModified": {
-                    "type": "string"
+                "asset_id": {
+                    "type": "integer"
                 },
-                "outstandingShares": {
+                "avg_buy_price_rsd": {
                     "type": "number"
                 },
-                "pricePerUnit": {
+                "last_modified": {
+                    "type": "string"
+                },
+                "price_per_unit_rsd": {
                     "type": "number"
                 },
                 "profit": {
+                    "type": "number"
+                },
+                "public_amount": {
                     "type": "number"
                 },
                 "ticker": {
@@ -2046,6 +2558,25 @@ const docTemplate = `{
                 },
                 "type": {
                     "$ref": "#/definitions/dto.AssetType"
+                }
+            }
+        },
+        "dto.PortfolioProfitResponse": {
+            "type": "object",
+            "properties": {
+                "total_profit_rsd": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.PublishAssetRequest": {
+            "type": "object",
+            "required": [
+                "amount"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
                 }
             }
         },
@@ -2194,6 +2725,21 @@ const docTemplate = `{
                 }
             }
         },
+        "model.AssetType": {
+            "type": "string",
+            "enum": [
+                "stock",
+                "option",
+                "future",
+                "forexPair"
+            ],
+            "x-enum-varnames": [
+                "AssetTypeStock",
+                "AssetTypeOption",
+                "AssetTypeFuture",
+                "AssetTypeForexPair"
+            ]
+        },
         "model.OrderDirection": {
             "type": "string",
             "enum": [
@@ -2231,6 +2777,17 @@ const docTemplate = `{
                 "OrderTypeLimit",
                 "OrderTypeStop",
                 "OrderTypeStopLimit"
+            ]
+        },
+        "model.OwnerType": {
+            "type": "string",
+            "enum": [
+                "CLIENT",
+                "ACTUARY"
+            ],
+            "x-enum-varnames": [
+                "OwnerTypeClient",
+                "OwnerTypeActuary"
             ]
         }
     },

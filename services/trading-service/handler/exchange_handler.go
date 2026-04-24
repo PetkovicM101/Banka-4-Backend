@@ -28,7 +28,7 @@ func NewExchangeHandler(service *service.ExchangeService) *ExchangeHandler {
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/exchange [get]
+// @Router /api/exchanges [get]
 func (h *ExchangeHandler) GetAll(c *gin.Context) {
 	var query dto.ListExchangesQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
@@ -66,7 +66,7 @@ func (h *ExchangeHandler) GetAll(c *gin.Context) {
 // @Success 200 {object} dto.ExchangeResponse
 // @Failure 404 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /api/exchange/{micCode}/toggle [patch]
+// @Router /api/exchanges/{micCode}/toggle [patch]
 func (h *ExchangeHandler) ToggleTradingEnabled(c *gin.Context) {
 	micCode := c.Param("micCode")
 

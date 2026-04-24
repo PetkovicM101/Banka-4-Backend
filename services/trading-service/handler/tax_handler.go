@@ -36,7 +36,7 @@ func NewTaxHandler(taxService *service.TaxService, userClient client.UserService
 // @Failure 401 {object} errors.AppError
 // @Failure 403 {object} errors.AppError
 // @Security BearerAuth
-// @Router /api/tax/users [get]
+// @Router /api/tax [get]
 func (h *TaxHandler) ListTaxUsers(c *gin.Context) {
 	ctx := c.Request.Context()
 
