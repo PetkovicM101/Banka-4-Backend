@@ -81,7 +81,7 @@ func (f *fakeTpAccountRepo) FindAll(_ context.Context, _ *dto.ListAccountsQuery)
 	return nil, 0, nil
 }
 
-func (r *fakeTpAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
+func (r *fakeTpAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
 	return nil, nil
 }
 

@@ -15,7 +15,7 @@ func InvestmentFunds(db *gorm.DB) error {
 			Name:                "Alpha Growth Fund",
 			Description:         "Fond fokusiran na IT sektor sa agresivnom strategijom rasta.",
 			MinimumContribution: 1000.00,
-			ManagerID:           3, // Marko Markovic
+			ManagerID:           3,
 			LiquidAssets:        1500000.00,
 			AccountNumber:       "444000000000000010",
 			CreatedAt:           now,
@@ -24,7 +24,7 @@ func InvestmentFunds(db *gorm.DB) error {
 			Name:                "Beta Stable Fund",
 			Description:         "Konzervativni fond fokusiran na stabilne prihode i obveznice.",
 			MinimumContribution: 5000.00,
-			ManagerID:           7, // Jelena Jovanovic
+			ManagerID:           7,
 			LiquidAssets:        3000000.00,
 			AccountNumber:       "444000000000000011",
 			CreatedAt:           now,

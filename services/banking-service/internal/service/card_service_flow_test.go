@@ -29,7 +29,7 @@ func (r *fakeCardServiceAccountRepo) Create(_ context.Context, _ *model.Account)
 func (r *fakeCardServiceAccountRepo) AccountNumberExists(_ context.Context, _ string) (bool, error) {
 	return false, nil
 }
-func (r *fakeCardServiceAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
+func (r *fakeCardServiceAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
 	return nil, nil
 }
 func (r *fakeCardServiceAccountRepo) FindByAccountNumber(_ context.Context, accountNumber string) (*model.Account, error) {

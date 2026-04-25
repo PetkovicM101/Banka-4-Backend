@@ -12,15 +12,14 @@ type InvestmentFund struct {
 	AccountNumber       string    `gorm:"not null;size:50;uniqueIndex"`
 	CreatedAt           time.Time `gorm:"not null"`
 
-	Listings  []Listing            `gorm:"many2many:fund_listings;"`
 	Positions []ClientFundPosition `gorm:"foreignKey:FundID"`
 }
 
 type ClientFundPosition struct {
 	PositionID          uint            `gorm:"primaryKey;autoIncrement"`
-	FundID              uint            `gorm:"not null;index"`
+	FundID              uint            `gorm:"not null;uniqueIndex:idx_fund_client"`
 	Fund                *InvestmentFund `gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
-	ClientID            uint            `gorm:"not null;index"`
+	ClientID            uint            `gorm:"not null;uniqueIndex:idx_fund_client"`
 	TotalInvestedAmount float64         `gorm:"not null;default:0"`
 	UpdatedAt           time.Time       `gorm:"not null"`
 }

@@ -49,7 +49,7 @@ func (r *fakeTransferAccountRepo) Update(_ context.Context, account *model.Accou
 	r.accounts[account.AccountNumber] = *account
 	return nil
 }
-func (r *fakeTransferAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
+func (r *fakeTransferAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
 	return nil, nil
 }
 

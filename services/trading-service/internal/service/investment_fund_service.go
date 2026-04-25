@@ -48,7 +48,7 @@ func (s *InvestmentFundService) CreateFund(ctx context.Context, req dto.CreateFu
 		return nil, commonErrors.InternalErr(err)
 	}
 	if existing != nil {
-		return nil, commonErrors.BadRequestErr("fund name is already taken")
+		return nil, commonErrors.ConflictErr("fund name is already taken")
 	}
 
 	accountNumber, err := s.bankingClient.CreateFundAccount(ctx, req.Name, uint64(managerID))

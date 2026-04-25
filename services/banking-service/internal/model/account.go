@@ -12,6 +12,7 @@ const (
 	AccountTypePersonal AccountType = "Personal"
 	AccountTypeBusiness AccountType = "Business"
 	AccountTypeBank     AccountType = "Bank"
+	AccountTypeFund     AccountType = "Fund"
 )
 
 const (

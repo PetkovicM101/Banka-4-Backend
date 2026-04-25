@@ -188,7 +188,7 @@ func (r *fakeLoanAccountRepo) FindByClientID(_ context.Context, _ uint) ([]model
 	return nil, nil
 }
 
-func (r *fakeLoanAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
+func (r *fakeLoanAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
 	return nil, nil
 }
 

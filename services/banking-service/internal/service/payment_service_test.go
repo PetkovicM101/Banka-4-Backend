@@ -171,7 +171,7 @@ func (f *fakePaymentAccountRepo) UpdateBalance(ctx context.Context, account *mod
 	f.accounts[account.AccountNumber] = account
 	return nil
 }
-func (r *fakePaymentAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
+func (r *fakePaymentAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
 	return nil, nil
 }
 

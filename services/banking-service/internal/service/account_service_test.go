@@ -137,7 +137,7 @@ type fakeBankingTxManager struct{}
 func (m *fakeBankingTxManager) WithinTransaction(ctx context.Context, fn func(ctx context.Context) error) error {
 	return fn(ctx)
 }
-func (m *fakeBankingTxManager) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
+func (m *fakeBankingTxManager) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
 	return nil, nil
 }
 
@@ -169,7 +169,7 @@ func (f *fakeCurrencyConverter) CalculateFee(amount float64) float64 {
 	return amount * model.BankCommission
 }
 
-func (r *fakeAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
+func (r *fakeAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
 	return nil, nil
 }
 func (f *fakeCurrencyConverter) Convert(_ context.Context, amount float64, _ model.CurrencyCode, _ model.CurrencyCode) (float64, error) {
