@@ -727,6 +727,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/investment-funds": {
+            "post": {
+                "description": "Supervisor creates a new investment fund. An RSD account is automatically created for the fund.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "investment-funds"
+                ],
+                "summary": "Create a new investment fund",
+                "parameters": [
+                    {
+                        "description": "Fund details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateFundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateFundResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/listings/forex": {
             "get": {
                 "produces": [
@@ -1798,6 +1850,53 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateFundRequest": {
+            "type": "object",
+            "required": [
+                "description",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "minimum_contribution": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateFundResponse": {
+            "type": "object",
+            "properties": {
+                "account_number": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "integer"
+                },
+                "liquid_assets": {
+                    "type": "number"
+                },
+                "manager_id": {
+                    "type": "integer"
+                },
+                "minimum_contribution": {
+                    "type": "number"
+                },
+                "name": {
                     "type": "string"
                 }
             }

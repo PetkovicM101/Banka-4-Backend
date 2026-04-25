@@ -16,6 +16,37 @@ definitions:
       message:
         type: string
     type: object
+  dto.CreateFundRequest:
+    properties:
+      description:
+        type: string
+      minimum_contribution:
+        type: number
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  dto.CreateFundResponse:
+    properties:
+      account_number:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      fund_id:
+        type: integer
+      liquid_assets:
+        type: number
+      manager_id:
+        type: integer
+      minimum_contribution:
+        type: number
+      name:
+        type: string
+    type: object
   dto.CreateOrderRequest:
     properties:
       account_number:
@@ -1150,6 +1181,41 @@ paths:
       summary: Health check
       tags:
       - health
+  /api/investment-funds:
+    post:
+      consumes:
+      - application/json
+      description: Supervisor creates a new investment fund. An RSD account is automatically
+        created for the fund.
+      parameters:
+      - description: Fund details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateFundRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreateFundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Create a new investment fund
+      tags:
+      - investment-funds
   /api/listings/forex:
     get:
       parameters:
