@@ -685,6 +685,11 @@ func (s *OrderService) resolveOrderStatus(ctx context.Context, authCtx *auth.Aut
 		return model.OrderStatusApproved
 	}
 
+	isSupervisor, err := s.checkSupervisor(ctx)
+	if isSupervisor && err == nil {
+		return model.OrderStatusApproved
+	}
+
 	if authCtx.IdentityType != auth.IdentityEmployee || authCtx.EmployeeID == nil {
 		return model.OrderStatusPending
 	}
