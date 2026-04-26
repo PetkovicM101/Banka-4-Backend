@@ -165,7 +165,6 @@ func TestCreateFund_Success(t *testing.T) {
 	require.Equal(t, "444000112345678901", resp.AccountNumber)
 	require.Equal(t, uint(25), resp.ManagerID)
 	require.Equal(t, 1000.00, resp.MinimumContribution)
-	require.Equal(t, 0.0, resp.LiquidAssets)
 	require.WithinDuration(t, time.Now(), resp.CreatedAt, 5*time.Second)
 }
 

@@ -500,7 +500,6 @@ func seedInvestmentFund(t *testing.T, db *gorm.DB, name string, managerID uint) 
 		Description:         fmt.Sprintf("Description for %s", name),
 		MinimumContribution: 1000.0,
 		ManagerID:           managerID,
-		LiquidAssets:        0,
 		AccountNumber:       fmt.Sprintf("444000199999%06d", uniqueCounter.Add(1)),
 		CreatedAt:           time.Now(),
 	}

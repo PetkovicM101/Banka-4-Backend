@@ -76,7 +76,6 @@ func (s *InvestmentFundService) CreateFund(ctx context.Context, req dto.CreateFu
 		Description:         req.Description,
 		MinimumContribution: req.MinimumContribution,
 		ManagerID:           managerID,
-		LiquidAssets:        0,
 		AccountNumber:       accountNumber,
 		CreatedAt:           s.now(),
 	}
@@ -91,7 +90,6 @@ func (s *InvestmentFundService) CreateFund(ctx context.Context, req dto.CreateFu
 		Description:         fund.Description,
 		MinimumContribution: fund.MinimumContribution,
 		ManagerID:           fund.ManagerID,
-		LiquidAssets:        fund.LiquidAssets,
 		AccountNumber:       fund.AccountNumber,
 		CreatedAt:           fund.CreatedAt,
 	}, nil
@@ -143,24 +141,21 @@ func (s *InvestmentFundService) InvestInFund(ctx context.Context, fundID uint, r
 		)
 	}
 
+	payerAccount := req.AccountNumber
+	payerAmount := req.Amount
 	if authCtx.IdentityType == auth.IdentityEmployee {
-		_, err = s.bankingClient.CreatePaymentWithoutVerification(ctx, &pb.CreatePaymentRequest{
-			PayerAccountNumber:     req.AccountNumber,
-			RecipientAccountNumber: fund.AccountNumber,
-			RecipientName:          fund.Name,
-			Amount:                 req.Amount,
-			PaymentCode:            "289",
-			Purpose:                fmt.Sprintf("Investment into fund %s", fund.Name),
-		})
-	} else {
-		_, err = s.bankingClient.ExecuteTradeSettlement(
-			ctx,
-			req.AccountNumber,
-			currencyCode,
-			pb.TradeSettlementDirection_TRADE_SETTLEMENT_DIRECTION_BUY,
-			req.Amount,
-		)
+		payerAccount = "444000000000000000"
+		payerAmount = amountInRSD
 	}
+
+	_, err = s.bankingClient.CreatePaymentWithoutVerification(ctx, &pb.CreatePaymentRequest{
+		PayerAccountNumber:     payerAccount,
+		RecipientAccountNumber: fund.AccountNumber,
+		RecipientName:          fund.Name,
+		Amount:                 payerAmount,
+		PaymentCode:            "289",
+		Purpose:                fmt.Sprintf("Investment into fund %s", fund.Name),
+	})
 
 	if err != nil {
 		st, ok := status.FromError(err)
@@ -182,7 +177,7 @@ func (s *InvestmentFundService) InvestInFund(ctx context.Context, fundID uint, r
 		OwnerType:     ownerType,
 		FundID:        fundID,
 		AccountNumber: req.AccountNumber,
-		Amount:        req.Amount,
+		Amount:        amountInRSD,
 		CurrencyCode:  currencyCode,
 		CreatedAt:     now,
 	}

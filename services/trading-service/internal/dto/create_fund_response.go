@@ -8,7 +8,6 @@ type CreateFundResponse struct {
 	Description         string    `json:"description"`
 	MinimumContribution float64   `json:"minimum_contribution"`
 	ManagerID           uint      `json:"manager_id"`
-	LiquidAssets        float64   `json:"liquid_assets"`
 	AccountNumber       string    `json:"account_number"`
 	CreatedAt           time.Time `json:"created_at"`
 }
