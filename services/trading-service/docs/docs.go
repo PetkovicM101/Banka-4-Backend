@@ -2495,7 +2495,7 @@ const docTemplate = `{
                 "invested_now": {
                     "type": "number"
                 },
-                "total_invested": {
+                "total_invested_rsd": {
                     "type": "number"
                 }
             }
