@@ -21,8 +21,6 @@ type fakeFundRepo struct {
 	findByIDErr      error
 	findByNameResult *model.InvestmentFund
 	findByNameErr    error
-	findByIDResult   *model.InvestmentFund
-	findByIDErr      error
 	createErr        error
 	created          *model.InvestmentFund
 }

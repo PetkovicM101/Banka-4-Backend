@@ -11,5 +11,4 @@ type InvestmentFundRepository interface {
 	FindByID(ctx context.Context, id uint) (*model.InvestmentFund, error)
 	FindByAccountNumber(ctx context.Context, accountNumber string) (*model.InvestmentFund, error)
 	FindByName(ctx context.Context, name string) (*model.InvestmentFund, error)
-	FindByID(ctx context.Context, id uint) (*model.InvestmentFund, error)
 }
