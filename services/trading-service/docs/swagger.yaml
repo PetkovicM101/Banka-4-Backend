@@ -76,8 +76,6 @@ definitions:
         type: string
       fund_id:
         type: integer
-      liquid_assets:
-        type: number
       manager_id:
         type: integer
       minimum_contribution:
@@ -330,6 +328,35 @@ definitions:
         type: string
       volume:
         type: integer
+    type: object
+  dto.InvestInFundRequest:
+    properties:
+      account_number:
+        description: |-
+          AccountNumber is the source account for the investment.
+          For clients this must be one of their own accounts.
+          For supervisors this must be a bank account.
+        type: string
+      amount:
+        type: number
+    required:
+    - account_number
+    - amount
+    type: object
+  dto.InvestInFundResponse:
+    properties:
+      created_at:
+        type: string
+      currency_code:
+        type: string
+      fund_id:
+        type: integer
+      fund_name:
+        type: string
+      invested_now:
+        type: number
+      total_invested_rsd:
+        type: number
     type: object
   dto.ListOrdersResponse:
     properties:
@@ -1254,6 +1281,51 @@ paths:
           schema:
             $ref: '#/definitions/errors.AppError'
       summary: Create a new investment fund
+      tags:
+      - investment-funds
+  /api/investment-funds/{fundId}/invest:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Allows a client or supervisor to invest money into an investment fund.
+        Clients must provide one of their own accounts; supervisors must provide a bank account.
+      parameters:
+      - description: Fund ID
+        in: path
+        name: fundId
+        required: true
+        type: integer
+      - description: Investment details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InvestInFundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InvestInFundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Invest into a fund
       tags:
       - investment-funds
   /api/listings/forex:

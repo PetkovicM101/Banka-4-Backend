@@ -79,6 +79,7 @@ func TestMain(m *testing.M) {
 		&model.TaxCollection{},
 		&model.InvestmentFund{},
 		&model.ClientFundPosition{},
+		&model.ClientFundInvestment{},
 	); err != nil {
 		log.Fatalf("auto migrate test schema: %v", err)
 	}
@@ -281,7 +282,9 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	exchangeSvc := service.NewExchangeService(exchangeRepo)
 	listingSvc := service.NewListingService(listingRepo, futuresRepo, forexRepo, optionRepo)
 	fundRepo := repository.NewInvestmentFundRepository(db)
-	fundSvc := service.NewInvestmentFundService(fundRepo, bankingClient)
+	positionRepo := repository.NewClientFundPositionRepository(db)
+	investmentRepo := repository.NewClientFundInvestmentRepository(db)
+	fundSvc := service.NewInvestmentFundService(fundRepo, positionRepo, investmentRepo, bankingClient)
 	fundHandler := handler.NewInvestmentFundHandler(fundSvc)
 
 	var taxRecorder service.TaxRecorder = &fakeTaxRecorder{}
@@ -497,7 +500,6 @@ func seedInvestmentFund(t *testing.T, db *gorm.DB, name string, managerID uint) 
 		Description:         fmt.Sprintf("Description for %s", name),
 		MinimumContribution: 1000.0,
 		ManagerID:           managerID,
-		LiquidAssets:        0,
 		AccountNumber:       fmt.Sprintf("444000199999%06d", uniqueCounter.Add(1)),
 		CreatedAt:           time.Now(),
 	}

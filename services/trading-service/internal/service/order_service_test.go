@@ -2106,7 +2106,6 @@ func defaultFund(managerID uint) *model.InvestmentFund {
 		Name:          "Test Fund",
 		ManagerID:     managerID,
 		AccountNumber: "444000000000000000",
-		LiquidAssets:  500_000,
 	}
 }
 

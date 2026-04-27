@@ -779,6 +779,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/investment-funds/{fundId}/invest": {
+            "post": {
+                "description": "Allows a client or supervisor to invest money into an investment fund.\nClients must provide one of their own accounts; supervisors must provide a bank account.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "investment-funds"
+                ],
+                "summary": "Invest into a fund",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Fund ID",
+                        "name": "fundId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Investment details",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.InvestInFundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.InvestInFundResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/listings/forex": {
             "get": {
                 "produces": [
@@ -2008,9 +2073,6 @@ const docTemplate = `{
                 "fund_id": {
                     "type": "integer"
                 },
-                "liquid_assets": {
-                    "type": "number"
-                },
                 "manager_id": {
                     "type": "integer"
                 },
@@ -2393,6 +2455,45 @@ const docTemplate = `{
                 },
                 "volume": {
                     "type": "integer"
+                }
+            }
+        },
+        "dto.InvestInFundRequest": {
+            "type": "object",
+            "required": [
+                "account_number",
+                "amount"
+            ],
+            "properties": {
+                "account_number": {
+                    "description": "AccountNumber is the source account for the investment.\nFor clients this must be one of their own accounts.\nFor supervisors this must be a bank account.",
+                    "type": "string"
+                },
+                "amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.InvestInFundResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "currency_code": {
+                    "type": "string"
+                },
+                "fund_id": {
+                    "type": "integer"
+                },
+                "fund_name": {
+                    "type": "string"
+                },
+                "invested_now": {
+                    "type": "number"
+                },
+                "total_invested_rsd": {
+                    "type": "number"
                 }
             }
         },
