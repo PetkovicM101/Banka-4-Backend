@@ -141,20 +141,16 @@ func (s *InvestmentFundService) InvestInFund(ctx context.Context, fundID uint, r
 		)
 	}
 
-	payerAccount := req.AccountNumber
-	payerAmount := req.Amount
-	if authCtx.IdentityType == auth.IdentityEmployee {
-		payerAccount = "444000000000000000"
-		payerAmount = amountInRSD
-	}
+	commissionExempt := authCtx.IdentityType == auth.IdentityEmployee
 
 	_, err = s.bankingClient.CreatePaymentWithoutVerification(ctx, &pb.CreatePaymentRequest{
-		PayerAccountNumber:     payerAccount,
+		PayerAccountNumber:     req.AccountNumber,
 		RecipientAccountNumber: fund.AccountNumber,
 		RecipientName:          fund.Name,
-		Amount:                 payerAmount,
+		Amount:                 req.Amount,
 		PaymentCode:            "289",
 		Purpose:                fmt.Sprintf("Investment into fund %s", fund.Name),
+		CommissionExempt:       commissionExempt,
 	})
 
 	if err != nil {
