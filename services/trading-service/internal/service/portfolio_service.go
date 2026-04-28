@@ -83,6 +83,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 		listing   *model.Listing
 	}
 	meta := make(map[uint]assetMeta)
+	optionData := make(map[uint]*dto.OptionSpecificAssetData)
 
 	stocks, err := s.stockRepo.FindByAssetIDs(ctx, assetIDs)
 	if err != nil {
@@ -101,6 +102,11 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 	}
 	for _, op := range options {
 		meta[op.AssetID] = assetMeta{assetType: dto.AssetTypeOption, listing: op.Listing}
+		optionData[op.AssetID] = &dto.OptionSpecificAssetData{
+			StrikePrice:    op.StrikePrice,
+			OptionType:     string(op.OptionType),
+			SettlementDate: op.SettlementDate,
+		}
 	}
 
 	futures, err := s.futuresRepo.FindByAssetIDs(ctx, assetIDs)
@@ -151,6 +157,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 			ticker = o.Asset.Ticker
 		}
 
+
 		result = append(result, dto.PortfolioAssetResponse{
 			AssetID:         o.AssetID,
 			Type:            m.assetType,
@@ -161,6 +168,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 			LastModified:    o.UpdatedAt,
 			Profit:          profit,
 			PublicAmount:    o.PublicAmount,
+			OptionData:      optionData[o.AssetID],
 		})
 	}
 
