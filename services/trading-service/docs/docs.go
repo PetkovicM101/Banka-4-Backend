@@ -2652,6 +2652,20 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.OptionSpecificAssetData": {
+            "type": "object",
+            "properties": {
+                "option_type": {
+                    "type": "string"
+                },
+                "settlement_date": {
+                    "type": "string"
+                },
+                "strike_price": {
+                    "type": "number"
+                }
+            }
+        },
         "dto.OrderResponse": {
             "type": "object",
             "properties": {
@@ -2864,6 +2878,9 @@ const docTemplate = `{
                 },
                 "last_modified": {
                     "type": "string"
+                },
+                "option_data": {
+                    "$ref": "#/definitions/dto.OptionSpecificAssetData"
                 },
                 "price_per_unit_rsd": {
                     "type": "number"
