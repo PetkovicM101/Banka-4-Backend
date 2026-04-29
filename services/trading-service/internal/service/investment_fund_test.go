@@ -259,7 +259,6 @@ func TestGetFundDetail_Success(t *testing.T) {
 	require.Equal(t, 10.0, resp.Holdings[0].InitialMarginCost)
 
 	require.Len(t, resp.PerformanceHistory, 2)
-	require.False(t, resp.ShowSellButton)
 }
 
 func TestGetFundDetail_Supervisor_ShowSell(t *testing.T) {
@@ -276,9 +275,8 @@ func TestGetFundDetail_Supervisor_ShowSell(t *testing.T) {
 	listingRepo := &fakeListingRepoForFund{}
 	svc := newTestFundServiceWithListing(fundRepo, listingRepo, &fakeFundBankingClient{})
 
-	resp, err := svc.GetFundDetail(context.Background(), 1, "supervisor")
+	_, err := svc.GetFundDetail(context.Background(), 1, "supervisor")
 	require.NoError(t, err)
-	require.True(t, resp.ShowSellButton)
 }
 
 func TestGetFundDetail_NotFound(t *testing.T) {

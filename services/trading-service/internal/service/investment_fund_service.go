@@ -340,7 +340,7 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 	}
 
 	managerName := fmt.Sprintf("Manager %d", fund.ManagerID) // replace with actual name if user service is integrated
-	showSell := userRole == "supervisor"
+
 
 	return &dto.FundDetailResponse{
 		ID:                 fund.FundID,
@@ -353,6 +353,6 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 		AccountBalance:     balance,
 		Holdings:           holdingsResp,
 		PerformanceHistory: perfResp,
-		ShowSellButton:     showSell,
+
 	}, nil
 }

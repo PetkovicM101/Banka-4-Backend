@@ -27,5 +27,4 @@ type FundDetailResponse struct {
 	AccountBalance     float64                   `json:"accountBalance"`
 	Holdings           []SecurityHoldingResponse `json:"holdings"`
 	PerformanceHistory []FundPerformanceEntry    `json:"performanceHistory"`
-	ShowSellButton     bool                      `json:"showSellButton"`
 }
