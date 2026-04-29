@@ -9,12 +9,12 @@ import (
 )
 
 type ProfitService struct {
-	repo       repository.ProfitRepository
+	repo       repository.InvestmentFundRepository
 	userClient client.UserServiceClient
 }
 
 func NewProfitService(
-	repo repository.ProfitRepository,
+	repo repository.InvestmentFundRepository,
 	userClient client.UserServiceClient,
 ) *ProfitService {
 	return &ProfitService{
@@ -22,46 +22,7 @@ func NewProfitService(
 		userClient: userClient,
 	}
 }
-func (s *ProfitService) GetActuaryProfits(
-	ctx context.Context,
-	page, pageSize int32,
-	firstName, lastName string,
-) ([]dto.ActuaryProfitResponse, error) {
 
-	// 1. user-service (identitet)
-	resp, err := s.userClient.GetAllActuaries(ctx, page, pageSize, firstName, lastName)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. izvuci IDs
-	ids := make([]uint64, 0, len(resp.Actuaries))
-	for _, a := range resp.Actuaries {
-		ids = append(ids, a.Id)
-	}
-
-	// 3. profit iz trading DB
-	profitMap, err := s.repo.GetProfitByUserIDs(ctx, ids)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]dto.ActuaryProfitResponse, 0, len(resp.Actuaries))
-
-	for _, a := range resp.Actuaries {
-
-		profit := profitMap[a.Id]
-
-		result = append(result, dto.ActuaryProfitResponse{
-			FirstName: a.FirstName,
-			LastName:  a.LastName,
-			Role:      "supervisor",
-			ProfitRSD: profit,
-		})
-	}
-
-	return result, nil
-}
 func (s *ProfitService) GetFundPositions(
 	ctx context.Context,
 ) ([]dto.FundPositionResponse, error) {

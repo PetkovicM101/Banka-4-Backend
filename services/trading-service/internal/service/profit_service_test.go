@@ -72,54 +72,6 @@ func (m *MockUserClient) GetIdentityByUserId(ctx context.Context, userID uint64,
 }
 
 //
-// TEST 1 - ACTUARY PROFITS
-//
-
-func TestGetActuaryProfits(t *testing.T) {
-	ctx := context.Background()
-
-	repo := new(MockProfitRepo)
-	userClient := new(MockUserClient)
-
-	service := NewProfitService(repo, userClient)
-
-	// 1. user-service response
-	userClient.On(
-		"GetAllActuaries",
-		ctx,
-		int32(1),
-		int32(10),
-		"",
-		"",
-	).Return(&pb.GetAllActuariesResponse{
-		Actuaries: []*pb.ActuaryResponse{
-			{
-				Id:        1,
-				FirstName: "Marko",
-				LastName:  "Markovic",
-			},
-		},
-	}, nil)
-
-	// 2. repo profit map
-	repo.On("GetProfitByUserIDs", ctx, []uint64{1}).
-		Return(map[uint64]float64{
-			1: 1000,
-		}, nil)
-
-	// 3. call service
-	result, err := service.GetActuaryProfits(ctx, 1, 10, "", "")
-
-	// 4. assertions
-	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-
-	assert.Equal(t, "Marko", result[0].FirstName)
-	assert.Equal(t, "Markovic", result[0].LastName)
-	assert.Equal(t, float64(1000), result[0].ProfitRSD)
-}
-
-//
 // TEST 2 - FUND POSITIONS
 //
 

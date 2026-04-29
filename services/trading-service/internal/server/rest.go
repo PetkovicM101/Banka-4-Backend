@@ -174,7 +174,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 		profit := api.Group("/profit")
 		profit.Use(authMw, auth.RequirePermission(permission.Trading))
 		{
-			profit.GET("/actuaries", middleware.RequireSupervisor(userClient), profitHandler.GetActuaryProfits)
+			profit.GET("/actuaries", middleware.RequireSupervisor(userClient), portfolioHandler.GetAllActuaryProfits)
 			profit.GET("/funds", middleware.RequireSupervisor(userClient), profitHandler.GetFundPositions)
 		}
 	}
