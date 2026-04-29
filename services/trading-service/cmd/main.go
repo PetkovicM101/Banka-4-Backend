@@ -105,6 +105,9 @@ func main() {
 			repository.NewClientFundInvestmentRepository,
 			service.NewInvestmentFundService,
 			handler.NewInvestmentFundHandler,
+			repository.NewProfitRepository,
+			service.NewProfitService,
+			handler.NewProfitHandler,
 		),
 		fx.Invoke(func(cfg *config.Configuration) error {
 			return logging.Init(cfg.Env)

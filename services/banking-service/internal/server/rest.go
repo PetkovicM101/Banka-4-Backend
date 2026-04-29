@@ -34,7 +34,6 @@ func NewServer(
 	cardHandler *handler.CardHandler,
 	loanHandler *handler.LoanHandler,
 	transferHandler *handler.TransferHandler,
-	profitHandler *handler.ProfitHandler,
 	verifier auth.TokenVerifier,
 	permissions auth.PermissionProvider,
 ) {
@@ -51,7 +50,6 @@ func NewServer(
 		paymentHandler,
 		cardHandler,
 		loanHandler,
-		profitHandler,
 		verifier,
 		permissions,
 	)
@@ -93,7 +91,6 @@ func SetupRoutes(
 	paymentHandler *handler.PaymentHandler,
 	cardHandler *handler.CardHandler,
 	loanHandler *handler.LoanHandler,
-	profitHandler *handler.ProfitHandler,
 	verifier auth.TokenVerifier,
 	permissions auth.PermissionProvider,
 ) {
@@ -190,14 +187,6 @@ func SetupRoutes(
 			loanRequests.GET("", auth.RequireIdentityType(auth.IdentityEmployee), loanHandler.ListLoanRequests)
 			loanRequests.PATCH("/:id/approve", auth.RequireIdentityType(auth.IdentityEmployee), loanHandler.ApproveLoanRequest)
 			loanRequests.PATCH("/:id/reject", auth.RequireIdentityType(auth.IdentityEmployee), loanHandler.RejectLoanRequest)
-		}
-		profit := api.Group("/bank")
-		profit.Use(auth.Middleware(verifier, permissions))
-		{
-			profit.GET("/profit",
-				auth.RequireIdentityType(auth.IdentityEmployee),
-				profitHandler.GetBankProfit,
-			)
 		}
 	}
 }

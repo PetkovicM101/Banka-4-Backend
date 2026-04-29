@@ -45,9 +45,6 @@ func main() {
 			func(cfg *config.Configuration) client.ExchangeRateClient {
 				return client.NewExchangeRateClient(cfg.ExchangeRateAPIKey)
 			},
-			fx.Provide(func(cfg *config.Configuration) client.TradingClient {
-				return client.NewTradingClient(cfg.TradingServiceBaseURL)
-			}),
 			fx.Annotate(
 				client.NewMobileSecretClient,
 				fx.As(new(client.MobileSecretClient)),
@@ -83,7 +80,6 @@ func main() {
 			repository.NewLoanRepository,
 			repository.NewLoanRequestRepository,
 			repository.NewLoanTypeRepository,
-			service.NewProfitService,
 			service.NewAccountService,
 			service.NewCompanyService,
 			service.NewPayeeService,
@@ -93,7 +89,6 @@ func main() {
 			service.NewEmailService,
 			service.NewLoanService,
 			service.NewLoanScheduler,
-			handler.NewProfitHandler,
 			handler.NewAccountHandler,
 			handler.NewCompanyHandler,
 			handler.NewPayeeHandler,

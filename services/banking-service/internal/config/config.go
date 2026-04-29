@@ -35,17 +35,16 @@ func (c *DBConfig) DSN() string {
 }
 
 type Configuration struct {
-	Env                   string
-	Port                  string
-	DB                    DBConfig
-	SMTP                  SMTPConfig
-	JWTSecret             string
-	GrpcPort              string // reserved for future banking-service gRPC endpoints
-	UserServiceAddr       string
-	UserServiceBaseURL    string
-	TradingServiceBaseURL string
-	ExchangeRateAPIKey    string
-	URLs                  URLConfig
+	Env                string
+	Port               string
+	DB                 DBConfig
+	SMTP               SMTPConfig
+	JWTSecret          string
+	GrpcPort           string // reserved for future banking-service gRPC endpoints
+	UserServiceAddr    string
+	UserServiceBaseURL string
+	ExchangeRateAPIKey string
+	URLs               URLConfig
 }
 
 func GetAsIntOrDefault(env string, defaultValue int) int {
@@ -83,14 +82,13 @@ func Load() *Configuration {
 	_ = godotenv.Load()
 
 	return &Configuration{
-		Env:                   GetOrDefault("ENV", "development"),
-		Port:                  GetOrDefault("PORT", "8081"),
-		GrpcPort:              GetOrDefault("GRPC_PORT", "50052"),
-		JWTSecret:             GetOrThrow("JWT_SECRET"),
-		UserServiceAddr:       GetOrDefault("USER_SERVICE_ADDR", "localhost:50051"),
-		UserServiceBaseURL:    GetOrDefault("USER_SERVICE_BASE_URL", "http://localhost:8080"),
-		TradingServiceBaseURL: GetOrDefault("TRADING_SERVICE_BASE_URL", "http://localhost:8090"),
-		ExchangeRateAPIKey:    GetOrThrow("EXCHANGE_RATE_API_KEY"),
+		Env:                GetOrDefault("ENV", "development"),
+		Port:               GetOrDefault("PORT", "8081"),
+		GrpcPort:           GetOrDefault("GRPC_PORT", "50052"),
+		JWTSecret:          GetOrThrow("JWT_SECRET"),
+		UserServiceAddr:    GetOrDefault("USER_SERVICE_ADDR", "localhost:50051"),
+		UserServiceBaseURL: GetOrDefault("USER_SERVICE_BASE_URL", "http://localhost:8080"),
+		ExchangeRateAPIKey: GetOrThrow("EXCHANGE_RATE_API_KEY"),
 		DB: DBConfig{
 			Host:     GetOrThrow("DB_HOST"),
 			Port:     GetOrThrow("DB_PORT"),
