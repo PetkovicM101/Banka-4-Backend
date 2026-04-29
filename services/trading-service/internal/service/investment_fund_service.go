@@ -19,6 +19,7 @@ import (
 
 type InvestmentFundService struct {
 	fundRepo       repository.InvestmentFundRepository
+	listingRepo    repository.ListingRepository
 	positionRepo   repository.ClientFundPositionRepository
 	investmentRepo repository.ClientFundInvestmentRepository
 	bankingClient  client.BankingClient
@@ -28,12 +29,14 @@ type InvestmentFundService struct {
 func NewInvestmentFundService(
 	fundRepo repository.InvestmentFundRepository,
 	positionRepo repository.ClientFundPositionRepository,
+	listingRepo repository.ListingRepository,
 	investmentRepo repository.ClientFundInvestmentRepository,
 	bankingClient client.BankingClient,
 ) *InvestmentFundService {
 	return &InvestmentFundService{
 		fundRepo:       fundRepo,
 		positionRepo:   positionRepo,
+		listingRepo:    listingRepo,
 		investmentRepo: investmentRepo,
 		bankingClient:  bankingClient,
 		now:            time.Now,
@@ -250,4 +253,106 @@ func resolveCallerIdentity(authCtx *auth.AuthContext) (uint, model.OwnerType, er
 	default:
 		return 0, "", commonErrors.UnauthorizedErr("unknown identity type")
 	}
+}
+
+func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, userRole string) (*dto.FundDetailResponse, error) {
+	// 1. Fund base info
+	fund, err := s.fundRepo.FindByID(ctx, fundID)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+	if fund == nil {
+		return nil, commonErrors.NotFoundErr("investment fund not found")
+	}
+
+	// 2. Holdings (positions)
+	holdings, err := s.fundRepo.FindHoldings(ctx, fundID)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+
+	// 3. Compute current fund value and prepare holdings list
+	var fundValue float64 = 0
+	holdingsResp := make([]dto.SecurityHoldingResponse, 0, len(holdings))
+
+	// Batch fetch listings by asset IDs
+	assetIDs := make([]uint, len(holdings))
+	for i, h := range holdings {
+		assetIDs[i] = h.AssetID
+	}
+	listings, err := s.listingRepo.FindByAssetIDs(ctx, assetIDs)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+	listingMap := make(map[uint]*model.Listing)
+	for i := range listings {
+		listingMap[listings[i].AssetID] = &listings[i]
+	}
+
+	for _, h := range holdings {
+		listing, ok := listingMap[h.AssetID]
+		if !ok {
+			continue
+		}
+		dailyInfo, _ := s.listingRepo.FindLastDailyPriceInfo(ctx, listing.ListingID, time.Now())
+		currentPrice := listing.Price
+		marketValue := h.Amount * currentPrice
+		fundValue += marketValue
+
+		change := 0.0
+		volume := uint64(0)
+		if dailyInfo != nil {
+			change = dailyInfo.Change
+			volume = uint64(dailyInfo.Volume)
+		}
+
+		holdingsResp = append(holdingsResp, dto.SecurityHoldingResponse{
+			Ticker:            h.Asset.Ticker,
+			Price:             currentPrice,
+			Change:            change,
+			Volume:            volume,
+			InitialMarginCost: listing.MaintenanceMargin,
+			AcquisitionDate:   h.UpdatedAt,
+		})
+	}
+
+	// 4. Total invested and profit
+	totalInvested, err := s.fundRepo.CalculateTotalInvested(ctx, fundID)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+	profit := fundValue - totalInvested
+
+	// 5. Account liquidity
+	balance, err := s.fundRepo.GetAccountBalance(ctx, fund.AccountNumber)
+	if err != nil {
+		balance = 0
+	}
+
+	// 6. Performance history (last 12 entries)
+	perfHistory, err := s.fundRepo.GetPerformanceHistory(ctx, fundID, 12)
+	if err != nil {
+		perfHistory = []model.FundPerformance{}
+	}
+	perfResp := make([]dto.FundPerformanceEntry, len(perfHistory))
+	for i, p := range perfHistory {
+		perfResp[i] = dto.FundPerformanceEntry{Date: p.Date, Value: p.FundValue}
+	}
+
+	managerName := fmt.Sprintf("Manager %d", fund.ManagerID) // replace with actual name if user service is integrated
+	showSell := userRole == "supervisor"
+
+	return &dto.FundDetailResponse{
+		ID:                 fund.FundID,
+		Name:               fund.Name,
+		Description:        fund.Description,
+		Manager:            managerName,
+		FundValue:          fundValue,
+		MinInvestment:      fund.MinimumContribution,
+		Profit:             profit,
+		AccountBalance:     balance,
+		Holdings:           holdingsResp,
+		PerformanceHistory: perfResp,
+		ShowSellButton:     showSell,
+	}, nil
 }

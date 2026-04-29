@@ -126,6 +126,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 				),
 				fundHandler.InvestInFund,
 			)
+			funds.GET("/:fundId", fundHandler.GetFundDetail)
 		}
 
 		client := api.Group("/client")

@@ -1,4 +1,4 @@
-//go:build integration
+ //go:build integration
 
 package integration_test
 
@@ -145,3 +145,133 @@ func TestCreateFund_AccountNumberIsUnique(t *testing.T) {
 
 	require.NotEqual(t, resp1["account_number"], resp2["account_number"])
 }
+
+ // TestGetFundDetail_Success_AsClient checks that a client can view fund details,
+ func TestGetFundDetail_Success_AsClient(t *testing.T) {
+	 t.Parallel()
+	 db := setupTestDB(t)
+	 router, _ := setupTestRouter(t, db)
+
+	 supervisorAuth := authHeaderForSupervisor(t)
+	 fundName := fmt.Sprintf("GetFundTest %d", uniqueCounter.Add(1))
+	 createBody := map[string]any{
+		 "name":                 fundName,
+		 "description":          "Test fund for GET endpoint",
+		 "minimum_contribution": 2000.0,
+	 }
+	 createResp := performRequest(t, router, http.MethodPost, "/api/investment-funds", createBody, supervisorAuth)
+	 requireStatus(t, createResp, http.StatusCreated)
+	 createData := decodeResponse[map[string]any](t, createResp)
+	 fundID := int(createData["id"].(float64))
+
+	 clientAuth := authHeaderForClient(t, 10, 100)
+	 getPath := fmt.Sprintf("/api/investment-funds/%d", fundID)
+	 rec := performRequest(t, router, http.MethodGet, getPath, nil, clientAuth)
+	 requireStatus(t, rec, http.StatusOK)
+
+	 resp := decodeResponse[map[string]any](t, rec)
+
+	 // 3. Validate response fields
+	 require.Equal(t, fundName, resp["name"])
+	 require.Equal(t, "Test fund for GET endpoint", resp["description"])
+	 require.Equal(t, 2000.0, resp["minInvestment"])
+	 require.Contains(t, resp["manager"], "Manager") // manager display name
+	 require.NotNil(t, resp["fundValue"])
+	 require.NotNil(t, resp["profit"])
+	 require.NotNil(t, resp["accountBalance"])
+	 require.IsType(t, []interface{}{}, resp["holdings"])
+	 require.IsType(t, []interface{}{}, resp["performanceHistory"])
+	 require.Equal(t, false, resp["showSellButton"])
+ }
+
+ // TestGetFundDetail_Supervisor_SeesSellButton ensures that a supervisor sees the sell button.
+ func TestGetFundDetail_Supervisor_SeesSellButton(t *testing.T) {
+	 t.Parallel()
+	 db := setupTestDB(t)
+	 router, _ := setupTestRouter(t, db)
+
+	 supervisorAuth := authHeaderForSupervisor(t)
+	 fundName := fmt.Sprintf("SupervisorFund %d", uniqueCounter.Add(1))
+	 createBody := map[string]any{
+		 "name":                 fundName,
+		 "description":          "Fund for supervisor",
+		 "minimum_contribution": 1000.0,
+	 }
+	 createResp := performRequest(t, router, http.MethodPost, "/api/investment-funds", createBody, supervisorAuth)
+	 requireStatus(t, createResp, http.StatusCreated)
+	 createData := decodeResponse[map[string]any](t, createResp)
+	 fundID := int(createData["id"].(float64))
+
+	 getPath := fmt.Sprintf("/api/investment-funds/%d", fundID)
+	 rec := performRequest(t, router, http.MethodGet, getPath, nil, supervisorAuth)
+	 requireStatus(t, rec, http.StatusOK)
+
+	 resp := decodeResponse[map[string]any](t, rec)
+	 require.Equal(t, true, resp["showSellButton"])
+ }
+
+ // TestGetFundDetail_Unauthorized returns 401 when no auth.
+ func TestGetFundDetail_Unauthorized(t *testing.T) {
+	 t.Parallel()
+	 db := setupTestDB(t)
+	 router, _ := setupTestRouter(t, db)
+
+	 supervisorAuth := authHeaderForSupervisor(t)
+	 createBody := map[string]any{
+		 "name":                 fmt.Sprintf("NoAuthFund %d", uniqueCounter.Add(1)),
+		 "description":          "For unauthorized test",
+		 "minimum_contribution": 500.0,
+	 }
+	 createResp := performRequest(t, router, http.MethodPost, "/api/investment-funds", createBody, supervisorAuth)
+	 requireStatus(t, createResp, http.StatusCreated)
+	 createData := decodeResponse[map[string]any](t, createResp)
+	 fundID := int(createData["id"].(float64))
+
+	 rec := performRequest(t, router, http.MethodGet, fmt.Sprintf("/api/investment-funds/%d", fundID), nil, "")
+	 requireStatus(t, rec, http.StatusUnauthorized)
+ }
+
+ // TestGetFundDetail_NotFound returns 404 for non-existent fund.
+ func TestGetFundDetail_NotFound(t *testing.T) {
+	 t.Parallel()
+	 db := setupTestDB(t)
+	 router, _ := setupTestRouter(t, db)
+
+	 clientAuth := authHeaderForClient(t, 10, 100)
+	 rec := performRequest(t, router, http.MethodGet, "/api/investment-funds/999999", nil, clientAuth)
+	 requireStatus(t, rec, http.StatusNotFound)
+ }
+
+ // TestGetFundDetail_HoldingsFormat checks that holdings contain the required fields.
+ func TestGetFundDetail_HoldingsFormat(t *testing.T) {
+	 t.Parallel()
+	 db := setupTestDB(t)
+	 router, _ := setupTestRouter(t, db)
+
+	 supervisorAuth := authHeaderForSupervisor(t)
+	 fundName := fmt.Sprintf("HoldingsFund %d", uniqueCounter.Add(1))
+	 createBody := map[string]any{
+		 "name":                 fundName,
+		 "description":          "Fund with holdings",
+		 "minimum_contribution": 1000.0,
+	 }
+	 createResp := performRequest(t, router, http.MethodPost, "/api/investment-funds", createBody, supervisorAuth)
+	 requireStatus(t, createResp, http.StatusCreated)
+	 createData := decodeResponse[map[string]any](t, createResp)
+	 fundID := int(createData["id"].(float64))
+
+	 clientAuth := authHeaderForClient(t, 10, 100)
+	 rec := performRequest(t, router, http.MethodGet, fmt.Sprintf("/api/investment-funds/%d", fundID), nil, clientAuth)
+	 requireStatus(t, rec, http.StatusOK)
+	 resp := decodeResponse[map[string]any](t, rec)
+	 holdings := resp["holdings"].([]interface{})
+	 if len(holdings) > 0 {
+		 first := holdings[0].(map[string]interface{})
+		 require.Contains(t, first, "ticker")
+		 require.Contains(t, first, "price")
+		 require.Contains(t, first, "change")
+		 require.Contains(t, first, "volume")
+		 require.Contains(t, first, "initialMarginCost")
+		 require.Contains(t, first, "acquisitionDate")
+	 }
+ }

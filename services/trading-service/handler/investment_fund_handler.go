@@ -84,3 +84,28 @@ func (h *InvestmentFundHandler) InvestInFund(c *gin.Context) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
+func (h *InvestmentFundHandler) GetFundDetail(c *gin.Context) {
+	fundIDStr := c.Param("fundId")
+	fundID, err := strconv.ParseUint(fundIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errors.BadRequestErr("invalid fund id"))
+		return
+	}
+
+	userRole, exists := c.Get("user_role")
+	if !exists {
+		userRole = "client"
+	}
+	roleStr, ok := userRole.(string)
+	if !ok {
+		roleStr = "client"
+	}
+
+	resp, err := h.service.GetFundDetail(c.Request.Context(), uint(fundID), roleStr)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	c.JSON(http.StatusOK, resp)
+}
