@@ -19,6 +19,70 @@ func NewInvestmentFundHandler(service *service.InvestmentFundService) *Investmen
 	return &InvestmentFundHandler{service: service}
 }
 
+// GetAllFunds godoc
+// @Summary Get all investment funds
+// @Description Returns a paginated list of all investment funds with optional filtering and sorting. Accessible to actuaries and clients.
+// @Tags investment-funds
+// @Produce json
+// @Param page query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Param name query string false "Filter by fund name (case-insensitive substring)"
+// @Param sort_by query string false "Sort by field: name, minimum_contribution, created_at, liquid_assets"
+// @Param sort_dir query string false "Sort direction: asc, desc"
+// @Success 200 {object} dto.ListFundsResponse
+// @Failure 400 {object} errors.AppError
+// @Failure 401 {object} errors.AppError
+// @Router /api/funds [get]
+func (h *InvestmentFundHandler) GetAllFunds(c *gin.Context) {
+	var query dto.ListFundsQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.Error(errors.BadRequestErr(err.Error()))
+		return
+	}
+
+	if query.Page <= 0 {
+		query.Page = 1
+	}
+	if query.PageSize <= 0 {
+		query.PageSize = 10
+	}
+
+	response, err := h.service.GetAllFunds(c.Request.Context(), query)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetActuaryFunds godoc
+// @Summary Get funds managed by an actuary
+// @Description Returns all investment funds managed by the specified actuary (supervisor). Shows fund value and liquidity.
+// @Tags investment-funds
+// @Produce json
+// @Param actId path int true "Actuary ID"
+// @Success 200 {array} dto.ActuaryFundResponse
+// @Failure 400 {object} errors.AppError
+// @Failure 401 {object} errors.AppError
+// @Failure 403 {object} errors.AppError
+// @Router /api/actuary/{actId}/assets/funds [get]
+func (h *InvestmentFundHandler) GetActuaryFunds(c *gin.Context) {
+	actID, err := strconv.ParseUint(c.Param("actId"), 10, 64)
+	if err != nil {
+		c.Error(errors.BadRequestErr("invalid actuary id"))
+		return
+	}
+
+	funds, err := h.service.GetActuaryFunds(c.Request.Context(), uint(actID))
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, funds)
+}
+
 // CreateFund godoc
 // @Summary Create a new investment fund
 // @Description Supervisor creates a new investment fund. An RSD account is automatically created for the fund.

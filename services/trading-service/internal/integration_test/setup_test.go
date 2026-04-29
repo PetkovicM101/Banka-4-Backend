@@ -285,7 +285,7 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	fundRepo := repository.NewInvestmentFundRepository(db)
 	positionRepo := repository.NewClientFundPositionRepository(db)
 	investmentRepo := repository.NewClientFundInvestmentRepository(db)
-	fundSvc := service.NewInvestmentFundService(fundRepo, positionRepo, investmentRepo, bankingClient)
+	fundSvc := service.NewInvestmentFundService(fundRepo, positionRepo, investmentRepo, assetOwnershipRepo, listingRepo, bankingClient)
 	fundHandler := handler.NewInvestmentFundHandler(fundSvc)
 
 	var taxRecorder service.TaxRecorder = &fakeTaxRecorder{}

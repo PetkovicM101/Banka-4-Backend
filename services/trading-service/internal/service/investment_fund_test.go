@@ -17,12 +17,17 @@ import (
 // ── Fake Fund Repo ────────────────────────────────────────────────
 
 type fakeFundRepo struct {
-	findByIDResult   *model.InvestmentFund
-	findByIDErr      error
-	findByNameResult *model.InvestmentFund
-	findByNameErr    error
-	createErr        error
-	created          *model.InvestmentFund
+	findByIDResult      *model.InvestmentFund
+	findByIDErr         error
+	findByNameResult    *model.InvestmentFund
+	findByNameErr       error
+	createErr           error
+	created             *model.InvestmentFund
+	findAllResult       []model.InvestmentFund
+	findAllTotal        int64
+	findAllErr          error
+	findByManagerResult []model.InvestmentFund
+	findByManagerErr    error
 }
 
 func (f *fakeFundRepo) FindByName(ctx context.Context, name string) (*model.InvestmentFund, error) {
@@ -35,6 +40,14 @@ func (f *fakeFundRepo) FindByID(ctx context.Context, id uint) (*model.Investment
 
 func (f *fakeFundRepo) FindByAccountNumber(ctx context.Context, accountNumber string) (*model.InvestmentFund, error) {
 	return nil, nil
+}
+
+func (f *fakeFundRepo) FindAll(ctx context.Context, name, sortBy, sortDir string, page, pageSize int) ([]model.InvestmentFund, int64, error) {
+	return f.findAllResult, f.findAllTotal, f.findAllErr
+}
+
+func (f *fakeFundRepo) FindByManagerID(ctx context.Context, managerID uint) ([]model.InvestmentFund, error) {
+	return f.findByManagerResult, f.findByManagerErr
 }
 
 func (f *fakeFundRepo) Create(ctx context.Context, fund *model.InvestmentFund) error {
@@ -144,16 +157,21 @@ func validFundRequest() dto.CreateFundRequest {
 	}
 }
 
-func newTestFundService(fundRepo *fakeFundRepo, bankingClient *fakeFundBankingClient) *InvestmentFundService {
-	return NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeInvestmentRepo{}, bankingClient)
+func newTestFundService(
+	fundRepo *fakeFundRepo,
+	ownershipRepo *fakeAssetOwnershipRepo,
+	listingRepo *fakeListingRepo,
+	bankingClient *fakeFundBankingClient,
+) *InvestmentFundService {
+	return NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeInvestmentRepo{}, ownershipRepo, listingRepo, bankingClient)
 }
 
-// ── Tests: CreateFund ─────────────────────────────────────────────
+// ── CreateFund tests ──────────────────────────────────────────────
 
 func TestCreateFund_Success(t *testing.T) {
 	fundRepo := &fakeFundRepo{}
 	bankingClient := &fakeFundBankingClient{createdAccountNumber: "444000112345678901"}
-	svc := newTestFundService(fundRepo, bankingClient)
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient)
 
 	resp, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -167,7 +185,7 @@ func TestCreateFund_Success(t *testing.T) {
 }
 
 func TestCreateFund_Unauthenticated(t *testing.T) {
-	svc := newTestFundService(&fakeFundRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(&fakeFundRepo{}, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
 
 	_, err := svc.CreateFund(context.Background(), validFundRequest())
 
@@ -176,7 +194,7 @@ func TestCreateFund_Unauthenticated(t *testing.T) {
 }
 
 func TestCreateFund_NotEmployee(t *testing.T) {
-	svc := newTestFundService(&fakeFundRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(&fakeFundRepo{}, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
 
 	_, err := svc.CreateFund(fundClientCtx(), validFundRequest())
 
@@ -188,7 +206,7 @@ func TestCreateFund_DuplicateName(t *testing.T) {
 	fundRepo := &fakeFundRepo{
 		findByNameResult: &model.InvestmentFund{Name: "Alpha Growth Fund"},
 	}
-	svc := newTestFundService(fundRepo, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -200,7 +218,7 @@ func TestCreateFund_FindByNameRepoError(t *testing.T) {
 	fundRepo := &fakeFundRepo{
 		findByNameErr: errors.New("db error"),
 	}
-	svc := newTestFundService(fundRepo, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -212,7 +230,7 @@ func TestCreateFund_BankingClientError(t *testing.T) {
 	bankingClient := &fakeFundBankingClient{
 		createFundAccountErr: fmt.Errorf("banking service unavailable"),
 	}
-	svc := newTestFundService(fundRepo, bankingClient)
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient)
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -224,9 +242,144 @@ func TestCreateFund_RepoCreateError(t *testing.T) {
 		createErr: errors.New("db error"),
 	}
 	bankingClient := &fakeFundBankingClient{createdAccountNumber: "444000112345678901"}
-	svc := newTestFundService(fundRepo, bankingClient)
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient)
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
+
+	require.Error(t, err)
+}
+
+// ── GetAllFunds tests ─────────────────────────────────────────────
+
+func TestGetAllFunds_Success(t *testing.T) {
+	fund := model.InvestmentFund{
+		FundID:              1,
+		Name:                "Alpha Growth Fund",
+		Description:         "IT sector fund",
+		MinimumContribution: 1000.0,
+		ManagerID:           25,
+		AccountNumber:       "444000000000000001",
+		Positions: []model.ClientFundPosition{
+			{TotalInvestedAmount: 300.0},
+		},
+	}
+	ownership := model.AssetOwnership{AssetID: 10, Amount: 2.0}
+	listing := model.Listing{AssetID: 10, Price: 100.0}
+
+	fundRepo := &fakeFundRepo{findAllResult: []model.InvestmentFund{fund}, findAllTotal: 1}
+	ownershipRepo := &fakeAssetOwnershipRepo{ownerships: []model.AssetOwnership{ownership}}
+	listingRepo := &fakeListingRepo{byAssetIDs: []model.Listing{listing}}
+	bankingClient := &fakeFundBankingClient{
+		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 500.0},
+	}
+	svc := newTestFundService(fundRepo, ownershipRepo, listingRepo, bankingClient)
+
+	resp, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, int64(1), resp.Total)
+	require.Len(t, resp.Data, 1)
+	// securitiesValue = 2.0 * 100.0 = 200.0
+	// fundValue = 500 (liquid) + 200 (securities) = 700
+	require.Equal(t, 700.0, resp.Data[0].FundValue)
+	// profit = 700 - 300 (invested) = 400
+	require.Equal(t, 400.0, resp.Data[0].Profit)
+	require.Equal(t, 500.0, resp.Data[0].LiquidAssets)
+	require.Equal(t, 1, resp.Page)
+	require.Equal(t, 10, resp.PageSize)
+}
+
+func TestGetAllFunds_Empty(t *testing.T) {
+	fundRepo := &fakeFundRepo{findAllResult: []model.InvestmentFund{}, findAllTotal: 0}
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+
+	resp, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
+
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+	require.Equal(t, int64(0), resp.Total)
+	require.Empty(t, resp.Data)
+}
+
+func TestGetAllFunds_RepoError(t *testing.T) {
+	fundRepo := &fakeFundRepo{findAllErr: errors.New("db error")}
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+
+	_, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
+
+	require.Error(t, err)
+}
+
+func TestGetAllFunds_OwnershipRepoError(t *testing.T) {
+	fund := model.InvestmentFund{FundID: 1, Name: "Fund", AccountNumber: "444000000000000001"}
+	fundRepo := &fakeFundRepo{findAllResult: []model.InvestmentFund{fund}, findAllTotal: 1}
+	ownershipRepo := &fakeAssetOwnershipRepo{findErr: errors.New("db error")}
+	svc := newTestFundService(fundRepo, ownershipRepo, &fakeListingRepo{}, &fakeFundBankingClient{})
+
+	_, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
+
+	require.Error(t, err)
+}
+
+// ── GetActuaryFunds tests ─────────────────────────────────────────
+
+func TestGetActuaryFunds_Success(t *testing.T) {
+	fund := model.InvestmentFund{
+		FundID:        1,
+		Name:          "Alpha Growth Fund",
+		Description:   "IT sector fund",
+		ManagerID:     25,
+		AccountNumber: "444000000000000001",
+	}
+	ownership := model.AssetOwnership{AssetID: 5, Amount: 10.0}
+	listing := model.Listing{AssetID: 5, Price: 50000.0}
+
+	fundRepo := &fakeFundRepo{findByManagerResult: []model.InvestmentFund{fund}}
+	ownershipRepo := &fakeAssetOwnershipRepo{ownerships: []model.AssetOwnership{ownership}}
+	listingRepo := &fakeListingRepo{byAssetIDs: []model.Listing{listing}}
+	bankingClient := &fakeFundBankingClient{
+		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 1500000.0},
+	}
+	svc := newTestFundService(fundRepo, ownershipRepo, listingRepo, bankingClient)
+
+	resp, err := svc.GetActuaryFunds(fundSupervisorCtx(), 25)
+
+	require.NoError(t, err)
+	require.Len(t, resp, 1)
+	require.Equal(t, "Alpha Growth Fund", resp[0].Name)
+	require.Equal(t, 1500000.0, resp[0].LiquidAssets)
+	// securitiesValue = 10 * 50000 = 500000
+	// fundValue = 1500000 + 500000 = 2000000
+	require.Equal(t, 2000000.0, resp[0].FundValue)
+}
+
+func TestGetActuaryFunds_Empty(t *testing.T) {
+	fundRepo := &fakeFundRepo{findByManagerResult: []model.InvestmentFund{}}
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+
+	resp, err := svc.GetActuaryFunds(fundSupervisorCtx(), 99)
+
+	require.NoError(t, err)
+	require.Empty(t, resp)
+}
+
+func TestGetActuaryFunds_RepoError(t *testing.T) {
+	fundRepo := &fakeFundRepo{findByManagerErr: errors.New("db error")}
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+
+	_, err := svc.GetActuaryFunds(fundSupervisorCtx(), 25)
+
+	require.Error(t, err)
+}
+
+func TestGetActuaryFunds_OwnershipRepoError(t *testing.T) {
+	fund := model.InvestmentFund{FundID: 1, Name: "Fund", ManagerID: 25}
+	fundRepo := &fakeFundRepo{findByManagerResult: []model.InvestmentFund{fund}}
+	ownershipRepo := &fakeAssetOwnershipRepo{findErr: errors.New("db error")}
+	svc := newTestFundService(fundRepo, ownershipRepo, &fakeListingRepo{}, &fakeFundBankingClient{})
+
+	_, err := svc.GetActuaryFunds(fundSupervisorCtx(), 25)
 
 	require.Error(t, err)
 }

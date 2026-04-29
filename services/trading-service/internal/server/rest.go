@@ -112,6 +112,15 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 		funds := api.Group("/investment-funds")
 		funds.Use(authMw, auth.RequirePermission(permission.Trading))
 		{
+			// Supervisori, agenti i klijenti mogu da vide sve fondove
+			funds.GET("",
+				auth.AnyOf(
+					middleware.RequireSupervisor(userClient),
+					middleware.RequireAgent(userClient),
+					auth.RequireIdentityType(auth.IdentityClient),
+				),
+				fundHandler.GetAllFunds,
+			)
 			// Samo supervisor može da kreira fond
 			funds.POST("",
 				auth.RequireIdentityType(auth.IdentityEmployee),
@@ -128,6 +137,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 			)
 		}
 
+
 		client := api.Group("/client")
 		client.Use(authMw, auth.RequirePermission(permission.Trading), auth.RequireClientSelf("clientId", true))
 		{
@@ -143,6 +153,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 		{
 			actuary.GET("/:actId/assets", portfolioHandler.GetActuaryPortfolio)
 			actuary.GET("/:actId/assets/profit", portfolioHandler.GetActuaryPortfolioProfit)
+			actuary.GET("/:actId/assets/funds", fundHandler.GetActuaryFunds)
 			actuary.GET("/:actId/accumulated-tax", taxHandler.GetActuaryAccumulatedTax)
 			actuary.POST("/:actId/options/:assetId/exercise", portfolioHandler.ExerciseOption)
 			actuary.PATCH("/:actId/assets/:ownershipId/publish", otcHandler.PublishAssetActuary)
