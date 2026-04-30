@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
-	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/repository"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
 	"github.com/stretchr/testify/require"
 )
 
@@ -81,58 +82,6 @@ func (f *fakeFundRepo) GetPerformanceHistory(ctx context.Context, fundID uint, l
 func (f *fakeFundRepo) SavePerformanceSnapshot(ctx context.Context, perf *model.FundPerformance) error {
 	return nil
 }
-func (f *fakeFundRepo) FindAll(ctx context.Context) ([]model.InvestmentFund, error) {
-	return nil, nil
-}
-
-// ── Fake ListingRepo (properly implements repository.ListingRepository) ─────
-
-type fakeListingRepoForFund struct {
-	findByAssetIDsResult []model.Listing
-	findByAssetIDsErr    error
-	dailyPriceInfo       *model.ListingDailyPriceInfo
-	dailyPriceInfoErr    error
-}
-
-func (f *fakeListingRepoForFund) FindAll(ctx context.Context) ([]model.Listing, error) {
-	return nil, nil
-}
-func (f *fakeListingRepoForFund) FindStocks(ctx context.Context, filter repository.ListingFilter) ([]model.Listing, int64, error) {
-	return nil, 0, nil
-}
-func (f *fakeListingRepoForFund) FindFutures(ctx context.Context, filter repository.ListingFilter) ([]model.Listing, int64, error) {
-	return nil, 0, nil
-}
-func (f *fakeListingRepoForFund) FindOptions(ctx context.Context, filter repository.ListingFilter) ([]model.Listing, int64, error) {
-	return nil, 0, nil
-}
-func (f *fakeListingRepoForFund) FindByID(ctx context.Context, id uint, daysBack int) (*model.Listing, error) {
-	return nil, nil
-}
-func (f *fakeListingRepoForFund) FindLatestDailyPriceInfo(ctx context.Context, listingID uint) (*model.ListingDailyPriceInfo, error) {
-	return nil, nil
-}
-func (f *fakeListingRepoForFund) Upsert(ctx context.Context, listing *model.Listing) error {
-	return nil
-}
-func (f *fakeListingRepoForFund) UpdatePriceAndAsk(ctx context.Context, listing *model.Listing, price, ask float64) error {
-	return nil
-}
-func (f *fakeListingRepoForFund) Count(ctx context.Context) (int64, error) {
-	return 0, nil
-}
-func (f *fakeListingRepoForFund) CreateDailyPriceInfo(ctx context.Context, info *model.ListingDailyPriceInfo) error {
-	return nil
-}
-func (f *fakeListingRepoForFund) FindLastDailyPriceInfo(ctx context.Context, listingID uint, beforeDate time.Time) (*model.ListingDailyPriceInfo, error) {
-	return f.dailyPriceInfo, f.dailyPriceInfoErr
-}
-func (f *fakeListingRepoForFund) FindByAssetType(ctx context.Context, assetType model.AssetType) ([]model.Listing, error) {
-	return nil, nil
-}
-func (f *fakeListingRepoForFund) FindByAssetIDs(ctx context.Context, assetIDs []uint) ([]model.Listing, error) {
-	return f.findByAssetIDsResult, f.findByAssetIDsErr
-}
 
 // ── Fake Position / Investment Repos (unchanged) ─────────────────────────────
 
@@ -158,6 +107,9 @@ func (f *fakeInvestmentRepo) Create(ctx context.Context, investment *model.Clien
 }
 func (f *fakeInvestmentRepo) FindByClientAndFund(ctx context.Context, clientID uint, ownerType model.OwnerType, fundID uint) ([]model.ClientFundInvestment, error) {
 	return nil, nil
+}
+func (f *fakeInvestmentRepo) Count(ctx context.Context) (int64, error) {
+	return 0, nil
 }
 
 // ── Fake Banking Client (unchanged) ─────────────────────────────────────────
@@ -290,8 +242,8 @@ func (f *fakeUserClient) GetIdentityByUserId(ctx context.Context, userID uint64,
 
 // ── Helper for creating service with listingRepo ───────────────────────────
 
-func newTestFundServiceWithListing(fundRepo *fakeFundRepo, listingRepo *fakeListingRepoForFund, bankingClient *fakeFundBankingClient, userClient *fakeUserClient) *InvestmentFundService {
-	svc := NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeListingRepo{}, &fakeInvestmentRepo{}, bankingClient, userClient)
+func newTestFundServiceWithListing(fundRepo *fakeFundRepo, listingRepo *fakeListingRepo, bankingClient *fakeFundBankingClient, userClient *fakeUserClient) *InvestmentFundService {
+	svc := NewInvestmentFundService(fundRepo, &fakePositionRepo{}, listingRepo, &fakeInvestmentRepo{}, &fakeAssetOwnershipRepo{}, bankingClient, userClient)
 	svc.listingRepo = listingRepo // inject listingRepo
 	return svc
 }
@@ -333,8 +285,8 @@ func TestGetFundDetail_Success(t *testing.T) {
 			{Date: time.Now().AddDate(0, -2, 0), FundValue: 1700},
 		},
 	}
-	listingRepo := &fakeListingRepoForFund{
-		findByAssetIDsResult: []model.Listing{
+	listingRepo := &fakeListingRepo {
+		byAssetIDs: []model.Listing{
 			{AssetID: 100, Price: 120, MaintenanceMargin: 10, ListingID: 1000},
 			{AssetID: 101, Price: 110, MaintenanceMargin: 8, ListingID: 1001},
 		},
@@ -373,7 +325,7 @@ func newTestFundService(
 	bankingClient *fakeFundBankingClient,
 	userClient *fakeFundUserClient,
 ) *InvestmentFundService {
-	return NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeInvestmentRepo{}, ownershipRepo, listingRepo, bankingClient, userClient)
+	return NewInvestmentFundService(fundRepo, &fakePositionRepo{}, listingRepo, &fakeInvestmentRepo{}, ownershipRepo, bankingClient, userClient)
 }
 
 // ── CreateFund tests ──────────────────────────────────────────────
@@ -383,51 +335,37 @@ func TestCreateFund_Success(t *testing.T) {
 	bankingClient := &fakeFundBankingClient{createdAccountNumber: "444000112345678901"}
 	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient, &fakeFundUserClient{})
 
-	svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient, userClient)
+	resp, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
-	resp, err := svc.GetFundDetail(context.Background(), 1, "client")
 	require.NoError(t, err)
 	require.NotNil(t, resp)
-	require.Equal(t, "Test Fund", resp.Name)
-	require.Equal(t, "A test fund", resp.Description)
-	require.Equal(t, 500.0, resp.MinInvestment)
-	require.Equal(t, "Manager 10", resp.Manager)
-	require.Equal(t, 2000.0, resp.AccountBalance)
-
-	// fundValue = (10*120)+(5*110) = 1200+550=1750
-	// profit = 1750 - 1500 = 250
-	require.Equal(t, 3750.0, resp.FundValue)
-	require.Equal(t, 2250.0, resp.Profit)
-
-	require.Len(t, resp.Holdings, 2)
-	require.Equal(t, "AAPL", resp.Holdings[0].Ticker)
-	require.Equal(t, 120.0, resp.Holdings[0].Price)
-	require.Equal(t, 2.5, resp.Holdings[0].Change)
-	require.Equal(t, uint64(1000), resp.Holdings[0].Volume)
-	require.Equal(t, 10.0, resp.Holdings[0].InitialMarginCost)
-
-	require.Len(t, resp.PerformanceHistory, 2)
+	require.Equal(t, "Alpha Growth Fund", resp.Name)
+	require.Equal(t, "444000112345678901", resp.AccountNumber)
+	require.Equal(t, uint(25), resp.ManagerID)
+	require.Equal(t, 1000.00, resp.MinimumContribution)
+	require.WithinDuration(t, time.Now(), resp.CreatedAt, 5*time.Second)
 }
 
 func TestGetFundDetail_NotFound(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDResult: nil}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 99, "client")
   require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
 }
+
 func TestCreateFund_Unauthenticated(t *testing.T) {
 	svc := newTestFundService(&fakeFundRepo{}, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.CreateFund(context.Background(), validFundRequest())
 
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "not found")
+	require.Contains(t, err.Error(), "not authenticated")
 }
 
 func TestGetFundDetail_RepoFindByIDError(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDErr: errors.New("db error")}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 1, "client")
   
   require.Error(t, err)
@@ -447,7 +385,7 @@ func TestGetFundDetail_HoldingsError(t *testing.T) {
 		findByIDResult:  fund,
 		findHoldingsErr: errors.New("holdings error"),
 	}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 1, "client")
 	require.Error(t, err)
 }
@@ -459,7 +397,7 @@ func TestGetFundDetail_CalculateTotalInvestedError(t *testing.T) {
 		findHoldingsResult:        []model.AssetOwnership{},
 		calculateTotalInvestedErr: errors.New("calc error"),
 	}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 1, "client")
   
   require.Error(t, err)
@@ -487,7 +425,7 @@ func TestGetFundDetail_EmptyHoldings(t *testing.T) {
 			{Date: time.Now(), FundValue: 5000},
 		},
 	}
-	listingRepo := &fakeListingRepoForFund{}
+	listingRepo := &fakeListingRepo{}
 	bankingClient := &fakeFundBankingClient{
 		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 5000},
 	}
@@ -635,4 +573,21 @@ func TestGetActuaryFunds_OwnershipRepoError(t *testing.T) {
 	_, err := svc.GetActuaryFunds(fundSupervisorCtx(), 25)
 
 	require.Error(t, err)
+}
+
+func validFundRequest() dto.CreateFundRequest {
+	return dto.CreateFundRequest{
+		Name:                "Alpha Growth Fund",
+		Description:         "Fund focused on the IT sector.",
+		MinimumContribution: 1000.00,
+	}
+}
+
+func fundClientCtx() context.Context {
+	clientID := uint(99)
+	return auth.SetAuthOnContext(context.Background(), &auth.AuthContext{
+		IdentityID:   1,
+		IdentityType: auth.IdentityClient,
+		ClientID:     &clientID,
+	})
 }

@@ -23,7 +23,6 @@ type InvestmentFundService struct {
 	positionRepo   repository.ClientFundPositionRepository
 	investmentRepo repository.ClientFundInvestmentRepository
 	ownershipRepo  repository.AssetOwnershipRepository
-	listingRepo    repository.ListingRepository
 	bankingClient  client.BankingClient
 	userClient     client.UserServiceClient
 	now            func() time.Time
@@ -35,7 +34,6 @@ func NewInvestmentFundService(
 	listingRepo repository.ListingRepository,
 	investmentRepo repository.ClientFundInvestmentRepository,
 	ownershipRepo repository.AssetOwnershipRepository,
-	listingRepo repository.ListingRepository,
 	bankingClient client.BankingClient,
 	userClient client.UserServiceClient,
 ) *InvestmentFundService {
@@ -45,7 +43,6 @@ func NewInvestmentFundService(
 		listingRepo:    listingRepo,
 		investmentRepo: investmentRepo,
 		ownershipRepo:  ownershipRepo,
-		listingRepo:    listingRepo,
 		bankingClient:  bankingClient,
 		userClient:     userClient,
 		now:            time.Now,
