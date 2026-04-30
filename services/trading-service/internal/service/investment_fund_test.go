@@ -135,20 +135,20 @@ func (f *fakeFundBankingClient) CreateFundAccount(_ context.Context, _ string, _
 
 type fakeFundUserClient struct {
 	// configurable responses
-	getClientByIdResp          *pb.GetClientByIdResponse
-	getClientByIdErr           error
+	getClientByIdResp *pb.GetClientByIdResponse
+	getClientByIdErr  error
 
-	getEmployeeByIdResp        *pb.GetEmployeeByIdResponse
-	getEmployeeByIdErr         error
+	getEmployeeByIdResp *pb.GetEmployeeByIdResponse
+	getEmployeeByIdErr  error
 
-	getAllClientsResp          *pb.GetAllClientsResponse
-	getAllClientsErr           error
+	getAllClientsResp *pb.GetAllClientsResponse
+	getAllClientsErr  error
 
-	getAllActuariesResp        *pb.GetAllActuariesResponse
-	getAllActuariesErr         error
+	getAllActuariesResp *pb.GetAllActuariesResponse
+	getAllActuariesErr  error
 
-	getIdentityByUserIdResp    *pb.GetIdentityByUserIdResponse
-	getIdentityByUserIdErr     error
+	getIdentityByUserIdResp *pb.GetIdentityByUserIdResponse
+	getIdentityByUserIdErr  error
 }
 
 func (f *fakeFundUserClient) GetClientById(_ context.Context, _ uint64) (*pb.GetClientByIdResponse, error) {

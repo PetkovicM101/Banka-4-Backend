@@ -129,7 +129,7 @@ func (s *InvestmentFundService) GetAllFunds(ctx context.Context, query dto.ListF
 func (s *InvestmentFundService) GetBankFundPositions(ctx context.Context) ([]dto.FundPositionResponse, error) {
 	funds, err := s.fundRepo.GetAllInvestmentFunds(ctx)
 	if err != nil {
-		return nil, commonErrors.InternalErr(err);
+		return nil, commonErrors.InternalErr(err)
 	}
 
 	result := make([]dto.FundPositionResponse, 0, len(funds))
@@ -145,7 +145,7 @@ func (s *InvestmentFundService) GetBankFundPositions(ctx context.Context) ([]dto
 		}
 
 		var totalInvested float64
-		var bankInvested  float64
+		var bankInvested float64
 		for _, pos := range fund.Positions {
 			totalInvested += pos.TotalInvestedAmount
 
@@ -202,7 +202,6 @@ func (s *InvestmentFundService) GetActuaryFunds(ctx context.Context, managerID u
 
 	return result, nil
 }
-
 
 // CreateFund creates a new investment fund. Only supervisors can call this.
 // A bank account is automatically created for the fund via the banking service.
@@ -374,7 +373,6 @@ func (s *InvestmentFundService) InvestInFund(ctx context.Context, fundID uint, r
 		CreatedAt:        now,
 	}, nil
 }
-
 
 func (s *InvestmentFundService) validateFundAccount(ctx context.Context, accountNumber string, authCtx *auth.AuthContext) (*pb.GetAccountByNumberResponse, error) {
 	account, err := s.bankingClient.GetAccountByNumber(ctx, accountNumber)

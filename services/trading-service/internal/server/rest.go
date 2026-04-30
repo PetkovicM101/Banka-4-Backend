@@ -137,7 +137,6 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 			)
 		}
 
-
 		client := api.Group("/client")
 		client.Use(authMw, auth.RequirePermission(permission.Trading), auth.RequireClientSelf("clientId", true))
 		{

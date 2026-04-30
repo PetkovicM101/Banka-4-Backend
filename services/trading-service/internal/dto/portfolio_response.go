@@ -25,9 +25,9 @@ type PortfolioAssetResponse struct {
 }
 
 type OptionSpecificAssetData struct {
-	StrikePrice       float64   `json:"strike_price"`
-	OptionType        string    `json:"option_type"`
-	SettlementDate    time.Time `json:"settlement_date"`
+	StrikePrice    float64   `json:"strike_price"`
+	OptionType     string    `json:"option_type"`
+	SettlementDate time.Time `json:"settlement_date"`
 }
 
 type PortfolioProfitResponse struct {
