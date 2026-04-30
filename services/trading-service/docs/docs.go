@@ -2207,13 +2207,13 @@ const docTemplate = `{
         "dto.ActuaryProfitResponse": {
             "type": "object",
             "properties": {
-                "firstName": {
+                "first_name": {
                     "type": "string"
                 },
-                "lastName": {
+                "last_name": {
                     "type": "string"
                 },
-                "profitRsd": {
+                "profit_rsd": {
                     "type": "number"
                 }
             }
@@ -2620,16 +2620,16 @@ const docTemplate = `{
         "dto.FundPositionResponse": {
             "type": "object",
             "properties": {
-                "bankSharePct": {
+                "bank_share_pct": {
                     "type": "number"
                 },
-                "bankShareValue": {
+                "bank_share_value": {
                     "type": "number"
                 },
-                "fundName": {
+                "fund_name": {
                     "type": "string"
                 },
-                "managerName": {
+                "manager_name": {
                     "type": "string"
                 },
                 "profit": {

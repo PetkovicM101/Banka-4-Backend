@@ -16,11 +16,11 @@ definitions:
     type: object
   dto.ActuaryProfitResponse:
     properties:
-      firstName:
+      first_name:
         type: string
-      lastName:
+      last_name:
         type: string
-      profitRsd:
+      profit_rsd:
         type: number
     type: object
   dto.AssetType:
@@ -289,13 +289,13 @@ definitions:
     type: object
   dto.FundPositionResponse:
     properties:
-      bankSharePct:
+      bank_share_pct:
         type: number
-      bankShareValue:
+      bank_share_value:
         type: number
-      fundName:
+      fund_name:
         type: string
-      managerName:
+      manager_name:
         type: string
       profit:
         type: number
