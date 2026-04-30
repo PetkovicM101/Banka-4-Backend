@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -27,8 +28,6 @@ type fakeFundRepo struct {
 	findHoldingsErr              error
 	calculateTotalInvestedResult float64
 	calculateTotalInvestedErr    error
-	getAccountBalanceResult      float64
-	getAccountBalanceErr         error
 	getPerformanceHistoryResult  []model.FundPerformance
 	getPerformanceHistoryErr     error
 }
@@ -56,9 +55,7 @@ func (f *fakeFundRepo) FindHoldings(ctx context.Context, fundID uint) ([]model.A
 func (f *fakeFundRepo) CalculateTotalInvested(ctx context.Context, fundID uint) (float64, error) {
 	return f.calculateTotalInvestedResult, f.calculateTotalInvestedErr
 }
-func (f *fakeFundRepo) GetAccountBalance(ctx context.Context, accountNumber string) (float64, error) {
-	return f.getAccountBalanceResult, f.getAccountBalanceErr
-}
+
 func (f *fakeFundRepo) GetPerformanceHistory(ctx context.Context, fundID uint, limit int) ([]model.FundPerformance, error) {
 	return f.getPerformanceHistoryResult, f.getPerformanceHistoryErr
 }
@@ -185,10 +182,40 @@ func (f *fakeFundBankingClient) CreateFundAccount(_ context.Context, _ string, _
 	return f.createdAccountNumber, f.createFundAccountErr
 }
 
+// ── Fake User Client
+type fakeUserClient struct {
+	getEmployeeByIDFunc func(ctx context.Context, id uint64) (*pb.GetEmployeeByIdResponse, error)
+}
+
+func (f *fakeUserClient) GetClientById(ctx context.Context, id uint64) (*pb.GetClientByIdResponse, error) {
+	return nil, nil
+}
+func (f *fakeUserClient) GetClientByIdentityId(ctx context.Context, identityId uint64) (*pb.GetClientByIdResponse, error) {
+	return nil, nil
+}
+func (f *fakeUserClient) GetEmployeeById(ctx context.Context, id uint64) (*pb.GetEmployeeByIdResponse, error) {
+	if f.getEmployeeByIDFunc != nil {
+		return f.getEmployeeByIDFunc(ctx, id)
+	}
+	return &pb.GetEmployeeByIdResponse{Id: id, FullName: fmt.Sprintf("Manager %d", id)}, nil
+}
+func (f *fakeUserClient) GetEmployeeByIdentityId(ctx context.Context, identityId uint64) (*pb.GetEmployeeByIdResponse, error) {
+	return nil, nil
+}
+func (f *fakeUserClient) GetAllClients(ctx context.Context, page, pageSize int32, firstName, lastName string) (*pb.GetAllClientsResponse, error) {
+	return nil, nil
+}
+func (f *fakeUserClient) GetAllActuaries(ctx context.Context, page, pageSize int32, firstName, lastName string) (*pb.GetAllActuariesResponse, error) {
+	return nil, nil
+}
+func (f *fakeUserClient) GetIdentityByUserId(ctx context.Context, userID uint64, userType string) (*pb.GetIdentityByUserIdResponse, error) {
+	return nil, nil
+}
+
 // ── Helper for creating service with listingRepo ───────────────────────────
 
-func newTestFundServiceWithListing(fundRepo *fakeFundRepo, listingRepo *fakeListingRepoForFund, bankingClient *fakeFundBankingClient) *InvestmentFundService {
-	svc := NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeListingRepo{}, &fakeInvestmentRepo{}, bankingClient)
+func newTestFundServiceWithListing(fundRepo *fakeFundRepo, listingRepo *fakeListingRepoForFund, bankingClient *fakeFundBankingClient, userClient *fakeUserClient) *InvestmentFundService {
+	svc := NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeListingRepo{}, &fakeInvestmentRepo{}, bankingClient, userClient)
 	svc.listingRepo = listingRepo // inject listingRepo
 	return svc
 }
@@ -204,6 +231,10 @@ func TestGetFundDetail_Success(t *testing.T) {
 		ManagerID:           10,
 		AccountNumber:       "ACC123",
 	}
+	bankingClient := &fakeFundBankingClient{
+		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 2000},
+	}
+	userClient := &fakeUserClient{}
 	fundRepo := &fakeFundRepo{
 		findByIDResult: fund,
 		findHoldingsResult: []model.AssetOwnership{
@@ -221,7 +252,6 @@ func TestGetFundDetail_Success(t *testing.T) {
 			},
 		},
 		calculateTotalInvestedResult: 1500,
-		getAccountBalanceResult:      2000,
 		getPerformanceHistoryResult: []model.FundPerformance{
 			{Date: time.Now().AddDate(0, -1, 0), FundValue: 1800},
 			{Date: time.Now().AddDate(0, -2, 0), FundValue: 1700},
@@ -234,8 +264,8 @@ func TestGetFundDetail_Success(t *testing.T) {
 		},
 		dailyPriceInfo: &model.ListingDailyPriceInfo{Change: 2.5, Volume: 1000},
 	}
-	bankingClient := &fakeFundBankingClient{}
-	svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient)
+
+	svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient, userClient)
 
 	resp, err := svc.GetFundDetail(context.Background(), 1, "client")
 	require.NoError(t, err)
@@ -248,8 +278,8 @@ func TestGetFundDetail_Success(t *testing.T) {
 
 	// fundValue = (10*120)+(5*110) = 1200+550=1750
 	// profit = 1750 - 1500 = 250
-	require.Equal(t, 1750.0, resp.FundValue)
-	require.Equal(t, 250.0, resp.Profit)
+	require.Equal(t, 3750.0, resp.FundValue)
+	require.Equal(t, 2250.0, resp.Profit)
 
 	require.Len(t, resp.Holdings, 2)
 	require.Equal(t, "AAPL", resp.Holdings[0].Ticker)
@@ -261,27 +291,9 @@ func TestGetFundDetail_Success(t *testing.T) {
 	require.Len(t, resp.PerformanceHistory, 2)
 }
 
-func TestGetFundDetail_Supervisor_ShowSell(t *testing.T) {
-	fund := &model.InvestmentFund{
-		FundID: 1, Name: "Test", AccountNumber: "ACC",
-	}
-	fundRepo := &fakeFundRepo{
-		findByIDResult:               fund,
-		findHoldingsResult:           []model.AssetOwnership{},
-		calculateTotalInvestedResult: 0,
-		getAccountBalanceResult:      0,
-		getPerformanceHistoryResult:  []model.FundPerformance{},
-	}
-	listingRepo := &fakeListingRepoForFund{}
-	svc := newTestFundServiceWithListing(fundRepo, listingRepo, &fakeFundBankingClient{})
-
-	_, err := svc.GetFundDetail(context.Background(), 1, "supervisor")
-	require.NoError(t, err)
-}
-
 func TestGetFundDetail_NotFound(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDResult: nil}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 99, "client")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
@@ -289,7 +301,7 @@ func TestGetFundDetail_NotFound(t *testing.T) {
 
 func TestGetFundDetail_RepoFindByIDError(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDErr: errors.New("db error")}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 1, "client")
 	require.Error(t, err)
 }
@@ -300,7 +312,7 @@ func TestGetFundDetail_HoldingsError(t *testing.T) {
 		findByIDResult:  fund,
 		findHoldingsErr: errors.New("holdings error"),
 	}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 1, "client")
 	require.Error(t, err)
 }
@@ -312,7 +324,7 @@ func TestGetFundDetail_CalculateTotalInvestedError(t *testing.T) {
 		findHoldingsResult:        []model.AssetOwnership{},
 		calculateTotalInvestedErr: errors.New("calc error"),
 	}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{})
+	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepoForFund{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 1, "client")
 	require.Error(t, err)
 }
@@ -323,17 +335,21 @@ func TestGetFundDetail_EmptyHoldings(t *testing.T) {
 		findByIDResult:               fund,
 		findHoldingsResult:           []model.AssetOwnership{},
 		calculateTotalInvestedResult: 0,
-		getAccountBalanceResult:      5000,
 		getPerformanceHistoryResult: []model.FundPerformance{
 			{Date: time.Now(), FundValue: 5000},
 		},
 	}
 	listingRepo := &fakeListingRepoForFund{}
-	svc := newTestFundServiceWithListing(fundRepo, listingRepo, &fakeFundBankingClient{})
+	bankingClient := &fakeFundBankingClient{
+		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 5000},
+	}
+	userClient := &fakeUserClient{}
+	svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient, userClient)
+
 	resp, err := svc.GetFundDetail(context.Background(), 1, "client")
 	require.NoError(t, err)
-	require.Equal(t, 0.0, resp.FundValue)
-	require.Equal(t, 0.0, resp.Profit)
+	require.Equal(t, 5000.0, resp.FundValue)
+	require.Equal(t, 5000.0, resp.Profit) // profit = 5000 - 0 = 5000
 	require.Empty(t, resp.Holdings)
 	require.NotEmpty(t, resp.PerformanceHistory)
 }

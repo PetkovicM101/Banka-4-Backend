@@ -23,6 +23,7 @@ type InvestmentFundService struct {
 	positionRepo   repository.ClientFundPositionRepository
 	investmentRepo repository.ClientFundInvestmentRepository
 	bankingClient  client.BankingClient
+	userClient     client.UserServiceClient
 	now            func() time.Time
 }
 
@@ -32,6 +33,7 @@ func NewInvestmentFundService(
 	listingRepo repository.ListingRepository,
 	investmentRepo repository.ClientFundInvestmentRepository,
 	bankingClient client.BankingClient,
+	userClient client.UserServiceClient,
 ) *InvestmentFundService {
 	return &InvestmentFundService{
 		fundRepo:       fundRepo,
@@ -39,6 +41,7 @@ func NewInvestmentFundService(
 		listingRepo:    listingRepo,
 		investmentRepo: investmentRepo,
 		bankingClient:  bankingClient,
+		userClient:     userClient,
 		now:            time.Now,
 	}
 }
@@ -316,18 +319,20 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 		})
 	}
 
-	// 4. Total invested and profit
+	var balance float64
+	balanceResp, err := s.bankingClient.GetAccountByNumber(ctx, fund.AccountNumber)
+	if err != nil {
+		balance = 0
+	} else {
+		balance = balanceResp.GetAvailableBalance()
+	}
+	fundValue += balance
+
 	totalInvested, err := s.fundRepo.CalculateTotalInvested(ctx, fundID)
 	if err != nil {
 		return nil, commonErrors.InternalErr(err)
 	}
 	profit := fundValue - totalInvested
-
-	// 5. Account liquidity
-	balance, err := s.fundRepo.GetAccountBalance(ctx, fund.AccountNumber)
-	if err != nil {
-		balance = 0
-	}
 
 	// 6. Performance history (last 12 entries)
 	perfHistory, err := s.fundRepo.GetPerformanceHistory(ctx, fundID, 12)
@@ -339,8 +344,14 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 		perfResp[i] = dto.FundPerformanceEntry{Date: p.Date, Value: p.FundValue}
 	}
 
-	managerName := fmt.Sprintf("Manager %d", fund.ManagerID) // replace with actual name if user service is integrated
+	managerName := fmt.Sprintf("Manager %d", fund.ManagerID)
+	if s.userClient != nil {
 
+		resp, err := s.userClient.GetEmployeeById(ctx, uint64(fund.ManagerID))
+		if err == nil && resp != nil {
+			managerName = resp.GetFullName()
+		}
+	}
 
 	return &dto.FundDetailResponse{
 		ID:                 fund.FundID,
@@ -353,6 +364,5 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 		AccountBalance:     balance,
 		Holdings:           holdingsResp,
 		PerformanceHistory: perfResp,
-
 	}, nil
 }

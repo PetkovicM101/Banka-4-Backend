@@ -56,14 +56,6 @@ func (r *investmentFundRepository) FindHoldings(ctx context.Context, fundID uint
 	return holdings, err
 }
 
-func (r *investmentFundRepository) GetAccountBalance(ctx context.Context, accountNumber string) (float64, error) {
-	var balance float64
-	err := r.db.WithContext(ctx).Table("accounts").
-		Select("available_balance").
-		Where("account_number = ?", accountNumber).
-		Scan(&balance).Error
-	return balance, err
-}
 
 func (r *investmentFundRepository) CalculateTotalInvested(ctx context.Context, fundID uint) (float64, error) {
 	var total float64
