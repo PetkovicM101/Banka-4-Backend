@@ -14,6 +14,15 @@ definitions:
       name:
         type: string
     type: object
+  dto.ActuaryProfitResponse:
+    properties:
+      first_name:
+        type: string
+      last_name:
+        type: string
+      profit_rsd:
+        type: number
+    type: object
   dto.AssetType:
     enum:
     - STOCK
@@ -277,6 +286,19 @@ definitions:
         type: string
       volume:
         type: integer
+    type: object
+  dto.FundPositionResponse:
+    properties:
+      bank_share_pct:
+        type: number
+      bank_share_value:
+        type: number
+      fund_name:
+        type: string
+      manager_name:
+        type: string
+      profit:
+        type: number
     type: object
   dto.FundSummaryResponse:
     properties:
@@ -2122,6 +2144,77 @@ paths:
       summary: List all publicly available OTC assets
       tags:
       - otc
+  /api/profit/actuaries:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated list of actuaries with their profits (agents
+        and supervisors)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by first name
+        in: query
+        name: first_name
+        type: string
+      - description: Filter by last name
+        in: query
+        name: last_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ActuaryProfitResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Get actuary profits
+      tags:
+      - profit
+  /api/profit/funds:
+    get:
+      consumes:
+      - application/json
+      description: Returns all investment funds with bank share, manager info and
+        profit calculation
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.FundPositionResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Get investment fund positions
+      tags:
+      - profit
   /api/tax:
     get:
       description: Returns a paginated list of clients and/or actuaries with their

@@ -49,6 +49,16 @@ func (r *investmentFundRepository) FindByName(ctx context.Context, name string) 
 	return &fund, result.Error
 }
 
+func (r *investmentFundRepository) GetAllInvestmentFunds(ctx context.Context) ([]model.InvestmentFund, error) {
+	var funds []model.InvestmentFund
+
+	err := r.db.WithContext(ctx).
+		Preload("Positions").
+		Find(&funds).Error
+
+	return funds, err
+}
+
 func (r *investmentFundRepository) FindAll(ctx context.Context, name string, sortBy string, sortDir string, page int, pageSize int) ([]model.InvestmentFund, int64, error) {
 	var funds []model.InvestmentFund
 	var count int64

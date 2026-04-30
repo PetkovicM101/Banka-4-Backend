@@ -150,6 +150,52 @@ func (h *PortfolioHandler) GetActuaryPortfolioProfit(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.PortfolioProfitResponse{TotalProfitRSD: total})
 }
 
+// GetAllActuaryProfits godoc
+// @Summary Get actuary profits
+// @Description Returns paginated list of actuaries with their profits (agents and supervisors)
+// @Tags profit
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Page size" default(10)
+// @Param first_name query string false "Filter by first name"
+// @Param last_name query string false "Filter by last name"
+// @Success 200 {array} dto.ActuaryProfitResponse
+// @Failure 400 {object} errors.AppError
+// @Failure 500 {object} errors.AppError
+// @Router /api/profit/actuaries [get]
+func (h *PortfolioHandler) GetAllActuaryProfits(c *gin.Context) {
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil {
+		c.Error(pkgerrors.BadRequestErr("invalid page"))
+		return
+	}
+
+	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	if err != nil {
+		c.Error(pkgerrors.BadRequestErr("invalid page size"))
+		return
+	}
+
+	firstName := c.Query("first_name")
+	lastName := c.Query("last_name")
+
+	res, err := h.service.GetAllActuaryProfits(
+		c.Request.Context(),
+		int32(page),
+		int32(pageSize),
+		firstName,
+		lastName,
+	)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
 // ExerciseOption godoc
 // @Summary Exercise an owned option
 // @Description Exercises one contract of an actuary-owned in-the-money call option and buys the underlying stock at the strike price.

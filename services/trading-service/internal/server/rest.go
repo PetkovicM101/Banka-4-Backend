@@ -176,11 +176,19 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 			orders.PATCH("/:id/decline", middleware.RequireSupervisor(userClient), orderHandler.DeclineOrder)
 			orders.PATCH("/:id/cancel", orderHandler.CancelOrder)
 		}
+
 		tax := api.Group("/tax")
 		tax.Use(authMw, auth.RequirePermission(permission.Trading))
 		{
 			tax.GET("", middleware.RequireSupervisor(userClient), taxHandler.ListTaxUsers)
 			tax.POST("/collect", middleware.RequireSupervisor(userClient), taxHandler.CollectTaxes)
+		}
+
+		profit := api.Group("/profit")
+		profit.Use(authMw, auth.RequirePermission(permission.Trading))
+		{
+			profit.GET("/actuaries", middleware.RequireSupervisor(userClient), portfolioHandler.GetAllActuaryProfits)
+			profit.GET("/funds", middleware.RequireSupervisor(userClient), fundHandler.GetBankFundPositions)
 		}
 	}
 }

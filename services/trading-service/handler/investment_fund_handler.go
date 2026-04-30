@@ -56,6 +56,26 @@ func (h *InvestmentFundHandler) GetAllFunds(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+// GetBankFundPositions godoc
+// @Summary Get investment fund positions
+// @Description Returns all investment funds with bank share, manager info and profit calculation
+// @Tags profit
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {array} dto.FundPositionResponse
+// @Failure 500 {object} errors.AppError
+// @Router /api/profit/funds [get]
+func (h *InvestmentFundHandler) GetBankFundPositions(c *gin.Context) {
+	res, err := h.service.GetBankFundPositions(c.Request.Context())
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
 // GetActuaryFunds godoc
 // @Summary Get funds managed by an actuary
 // @Description Returns all investment funds managed by the specified actuary (supervisor). Shows fund value and liquidity.

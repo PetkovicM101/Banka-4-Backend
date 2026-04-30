@@ -42,6 +42,10 @@ func (f *fakeFundRepo) FindByAccountNumber(ctx context.Context, accountNumber st
 	return nil, nil
 }
 
+func (f *fakeFundRepo) GetAllInvestmentFunds(ctx context.Context) ([]model.InvestmentFund, error) {
+	return f.findAllResult, f.findAllErr
+}
+
 func (f *fakeFundRepo) FindAll(ctx context.Context, name, sortBy, sortDir string, page, pageSize int) ([]model.InvestmentFund, int64, error) {
 	return f.findAllResult, f.findAllTotal, f.findAllErr
 }
@@ -129,6 +133,52 @@ func (f *fakeFundBankingClient) CreateFundAccount(_ context.Context, _ string, _
 	return f.createdAccountNumber, f.createFundAccountErr
 }
 
+type fakeFundUserClient struct {
+	// configurable responses
+	getClientByIdResp          *pb.GetClientByIdResponse
+	getClientByIdErr           error
+
+	getEmployeeByIdResp        *pb.GetEmployeeByIdResponse
+	getEmployeeByIdErr         error
+
+	getAllClientsResp          *pb.GetAllClientsResponse
+	getAllClientsErr           error
+
+	getAllActuariesResp        *pb.GetAllActuariesResponse
+	getAllActuariesErr         error
+
+	getIdentityByUserIdResp    *pb.GetIdentityByUserIdResponse
+	getIdentityByUserIdErr     error
+}
+
+func (f *fakeFundUserClient) GetClientById(_ context.Context, _ uint64) (*pb.GetClientByIdResponse, error) {
+	return f.getClientByIdResp, f.getClientByIdErr
+}
+
+func (f *fakeFundUserClient) GetClientByIdentityId(_ context.Context, _ uint64) (*pb.GetClientByIdResponse, error) {
+	return f.getClientByIdResp, f.getClientByIdErr
+}
+
+func (f *fakeFundUserClient) GetEmployeeById(_ context.Context, _ uint64) (*pb.GetEmployeeByIdResponse, error) {
+	return f.getEmployeeByIdResp, f.getEmployeeByIdErr
+}
+
+func (f *fakeFundUserClient) GetEmployeeByIdentityId(_ context.Context, _ uint64) (*pb.GetEmployeeByIdResponse, error) {
+	return f.getEmployeeByIdResp, f.getEmployeeByIdErr
+}
+
+func (f *fakeFundUserClient) GetAllClients(_ context.Context, _, _ int32, _, _ string) (*pb.GetAllClientsResponse, error) {
+	return f.getAllClientsResp, f.getAllClientsErr
+}
+
+func (f *fakeFundUserClient) GetAllActuaries(_ context.Context, _, _ int32, _, _ string) (*pb.GetAllActuariesResponse, error) {
+	return f.getAllActuariesResp, f.getAllActuariesErr
+}
+
+func (f *fakeFundUserClient) GetIdentityByUserId(_ context.Context, _ uint64, _ string) (*pb.GetIdentityByUserIdResponse, error) {
+	return f.getIdentityByUserIdResp, f.getIdentityByUserIdErr
+}
+
 // ── Helpers ───────────────────────────────────────────────────────
 
 func fundSupervisorCtx() context.Context {
@@ -162,8 +212,9 @@ func newTestFundService(
 	ownershipRepo *fakeAssetOwnershipRepo,
 	listingRepo *fakeListingRepo,
 	bankingClient *fakeFundBankingClient,
+	userClient *fakeFundUserClient,
 ) *InvestmentFundService {
-	return NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeInvestmentRepo{}, ownershipRepo, listingRepo, bankingClient)
+	return NewInvestmentFundService(fundRepo, &fakePositionRepo{}, &fakeInvestmentRepo{}, ownershipRepo, listingRepo, bankingClient, userClient)
 }
 
 // ── CreateFund tests ──────────────────────────────────────────────
@@ -171,7 +222,7 @@ func newTestFundService(
 func TestCreateFund_Success(t *testing.T) {
 	fundRepo := &fakeFundRepo{}
 	bankingClient := &fakeFundBankingClient{createdAccountNumber: "444000112345678901"}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient)
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient, &fakeFundUserClient{})
 
 	resp, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -185,7 +236,7 @@ func TestCreateFund_Success(t *testing.T) {
 }
 
 func TestCreateFund_Unauthenticated(t *testing.T) {
-	svc := newTestFundService(&fakeFundRepo{}, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(&fakeFundRepo{}, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.CreateFund(context.Background(), validFundRequest())
 
@@ -194,7 +245,7 @@ func TestCreateFund_Unauthenticated(t *testing.T) {
 }
 
 func TestCreateFund_NotEmployee(t *testing.T) {
-	svc := newTestFundService(&fakeFundRepo{}, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(&fakeFundRepo{}, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.CreateFund(fundClientCtx(), validFundRequest())
 
@@ -206,7 +257,7 @@ func TestCreateFund_DuplicateName(t *testing.T) {
 	fundRepo := &fakeFundRepo{
 		findByNameResult: &model.InvestmentFund{Name: "Alpha Growth Fund"},
 	}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -218,7 +269,7 @@ func TestCreateFund_FindByNameRepoError(t *testing.T) {
 	fundRepo := &fakeFundRepo{
 		findByNameErr: errors.New("db error"),
 	}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -230,7 +281,7 @@ func TestCreateFund_BankingClientError(t *testing.T) {
 	bankingClient := &fakeFundBankingClient{
 		createFundAccountErr: fmt.Errorf("banking service unavailable"),
 	}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient)
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient, &fakeFundUserClient{})
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -242,7 +293,7 @@ func TestCreateFund_RepoCreateError(t *testing.T) {
 		createErr: errors.New("db error"),
 	}
 	bankingClient := &fakeFundBankingClient{createdAccountNumber: "444000112345678901"}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient)
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, bankingClient, &fakeFundUserClient{})
 
 	_, err := svc.CreateFund(fundSupervisorCtx(), validFundRequest())
 
@@ -272,7 +323,7 @@ func TestGetAllFunds_Success(t *testing.T) {
 	bankingClient := &fakeFundBankingClient{
 		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 500.0},
 	}
-	svc := newTestFundService(fundRepo, ownershipRepo, listingRepo, bankingClient)
+	svc := newTestFundService(fundRepo, ownershipRepo, listingRepo, bankingClient, &fakeFundUserClient{})
 
 	resp, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
 
@@ -292,7 +343,7 @@ func TestGetAllFunds_Success(t *testing.T) {
 
 func TestGetAllFunds_Empty(t *testing.T) {
 	fundRepo := &fakeFundRepo{findAllResult: []model.InvestmentFund{}, findAllTotal: 0}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	resp, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
 
@@ -304,7 +355,7 @@ func TestGetAllFunds_Empty(t *testing.T) {
 
 func TestGetAllFunds_RepoError(t *testing.T) {
 	fundRepo := &fakeFundRepo{findAllErr: errors.New("db error")}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
 
@@ -315,7 +366,7 @@ func TestGetAllFunds_OwnershipRepoError(t *testing.T) {
 	fund := model.InvestmentFund{FundID: 1, Name: "Fund", AccountNumber: "444000000000000001"}
 	fundRepo := &fakeFundRepo{findAllResult: []model.InvestmentFund{fund}, findAllTotal: 1}
 	ownershipRepo := &fakeAssetOwnershipRepo{findErr: errors.New("db error")}
-	svc := newTestFundService(fundRepo, ownershipRepo, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, ownershipRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.GetAllFunds(fundSupervisorCtx(), dto.ListFundsQuery{Page: 1, PageSize: 10})
 
@@ -341,7 +392,7 @@ func TestGetActuaryFunds_Success(t *testing.T) {
 	bankingClient := &fakeFundBankingClient{
 		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 1500000.0},
 	}
-	svc := newTestFundService(fundRepo, ownershipRepo, listingRepo, bankingClient)
+	svc := newTestFundService(fundRepo, ownershipRepo, listingRepo, bankingClient, &fakeFundUserClient{})
 
 	resp, err := svc.GetActuaryFunds(fundSupervisorCtx(), 25)
 
@@ -356,7 +407,7 @@ func TestGetActuaryFunds_Success(t *testing.T) {
 
 func TestGetActuaryFunds_Empty(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByManagerResult: []model.InvestmentFund{}}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	resp, err := svc.GetActuaryFunds(fundSupervisorCtx(), 99)
 
@@ -366,7 +417,7 @@ func TestGetActuaryFunds_Empty(t *testing.T) {
 
 func TestGetActuaryFunds_RepoError(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByManagerErr: errors.New("db error")}
-	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, &fakeAssetOwnershipRepo{}, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.GetActuaryFunds(fundSupervisorCtx(), 25)
 
@@ -377,7 +428,7 @@ func TestGetActuaryFunds_OwnershipRepoError(t *testing.T) {
 	fund := model.InvestmentFund{FundID: 1, Name: "Fund", ManagerID: 25}
 	fundRepo := &fakeFundRepo{findByManagerResult: []model.InvestmentFund{fund}}
 	ownershipRepo := &fakeAssetOwnershipRepo{findErr: errors.New("db error")}
-	svc := newTestFundService(fundRepo, ownershipRepo, &fakeListingRepo{}, &fakeFundBankingClient{})
+	svc := newTestFundService(fundRepo, ownershipRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeFundUserClient{})
 
 	_, err := svc.GetActuaryFunds(fundSupervisorCtx(), 25)
 
