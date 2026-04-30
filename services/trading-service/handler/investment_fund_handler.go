@@ -102,10 +102,10 @@ func (h *InvestmentFundHandler) GetFundDetail(c *gin.Context) {
 		roleStr = "client"
 	}
 
-	resp, err := h.service.GetFundDetail(c.Request.Context(), uint(fundID), roleStr)
+	_, err = h.service.GetFundDetail(c.Request.Context(), uint(fundID), roleStr)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
-	c.JSON(http.StatusOK, resp)
+	c.Error(err)
 }
