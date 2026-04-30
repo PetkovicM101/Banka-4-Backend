@@ -150,7 +150,7 @@ func (h *PortfolioHandler) GetActuaryPortfolioProfit(c *gin.Context) {
 	c.JSON(http.StatusOK, dto.PortfolioProfitResponse{TotalProfitRSD: total})
 }
 
-// GetActuaryProfits godoc
+// GetAllActuaryProfits godoc
 // @Summary Get actuary profits
 // @Description Returns paginated list of actuaries with their profits (agents and supervisors)
 // @Tags profit
@@ -168,13 +168,13 @@ func (h *PortfolioHandler) GetActuaryPortfolioProfit(c *gin.Context) {
 func (h *PortfolioHandler) GetAllActuaryProfits(c *gin.Context) {
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		c.Error(pkgerrors.BadRequestErr("invalid page"))
 		return
 	}
 
 	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		c.Error(pkgerrors.BadRequestErr("invalid page size"))
 		return
 	}
 
