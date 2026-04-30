@@ -89,22 +89,24 @@ func (tp *TransactionProcessor) Process(ctx context.Context, transactionID uint)
 				return errors.BadRequestErr("insufficient banks funds")
 			}
 
-			model.UpdateBalances(payer, -transaction.StartAmount)
-			model.UpdateBalances(banksAccountTo, transaction.StartAmount)
-			model.UpdateBalances(banksAccountFrom, -transaction.EndAmount)
-			model.UpdateBalances(recipient, transaction.EndAmount)
+			updates := map[string]float64{}
 
-			if err := tp.accountRepo.UpdateBalance(ctx, payer); err != nil {
-				return errors.InternalErr(err)
-			}
-			if err := tp.accountRepo.UpdateBalance(ctx, banksAccountTo); err != nil {
-				return errors.InternalErr(err)
-			}
-			if err := tp.accountRepo.UpdateBalance(ctx, banksAccountFrom); err != nil {
-				return errors.InternalErr(err)
-			}
-			if err := tp.accountRepo.UpdateBalance(ctx, recipient); err != nil {
-				return errors.InternalErr(err)
+			updates[payer.AccountNumber] += -transaction.StartAmount
+			updates[banksAccountTo.AccountNumber] += transaction.StartAmount
+			updates[banksAccountFrom.AccountNumber] += -transaction.EndAmount
+			updates[recipient.AccountNumber] += transaction.EndAmount
+			
+			for accNum, delta := range updates {
+				acc, err := tp.accountRepo.FindByAccountNumber(ctx, accNum)
+				if err != nil {
+					return errors.InternalErr(err)
+				}
+
+				model.UpdateBalances(acc, delta)
+
+				if err := tp.accountRepo.UpdateBalance(ctx, acc); err != nil {
+					return errors.InternalErr(err)
+				}
 			}
 		} else {
 			model.UpdateBalances(payer, -transaction.StartAmount)

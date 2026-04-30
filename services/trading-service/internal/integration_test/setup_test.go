@@ -77,6 +77,9 @@ func TestMain(m *testing.M) {
 		&model.OrderTransaction{},
 		&model.AccumulatedTax{},
 		&model.TaxCollection{},
+		&model.InvestmentFund{},
+		&model.ClientFundPosition{},
+		&model.ClientFundInvestment{},
 	); err != nil {
 		log.Fatalf("auto migrate test schema: %v", err)
 	}
@@ -185,7 +188,9 @@ func (f *fakeBankingClient) GetAccountByNumber(_ context.Context, accountNumber 
 		AvailableBalance: 1_000_000,
 	}, nil
 }
-
+func (f *fakeBankingClient) CreateFundAccount(_ context.Context, fundName string, _ uint64) (string, error) {
+	return fmt.Sprintf("444000199999%06d", uniqueCounter.Add(1)), nil
+}
 func (f *fakeBankingClient) HasActiveLoan(_ context.Context, _ uint64) (*pb.HasActiveLoanResponse, error) {
 	return &pb.HasActiveLoanResponse{HasActiveLoan: true}, nil
 }
@@ -276,9 +281,14 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	taxRepo := repository.NewTaxRepository(db)
 	exchangeSvc := service.NewExchangeService(exchangeRepo)
 	listingSvc := service.NewListingService(listingRepo, futuresRepo, forexRepo, optionRepo)
+	fundRepo := repository.NewInvestmentFundRepository(db)
+	positionRepo := repository.NewClientFundPositionRepository(db)
+	investmentRepo := repository.NewClientFundInvestmentRepository(db)
+	fundSvc := service.NewInvestmentFundService(fundRepo, positionRepo, investmentRepo, assetOwnershipRepo, listingRepo, bankingClient, userClient)
+	fundHandler := handler.NewInvestmentFundHandler(fundSvc)
 
 	var taxRecorder service.TaxRecorder = &fakeTaxRecorder{}
-	orderSvc := service.NewOrderService(orderRepo, orderTxRepo, exchangeRepo, listingRepo, assetOwnershipRepo, futuresRepo, optionRepo, userClient, bankingClient, taxRecorder)
+	orderSvc := service.NewOrderService(orderRepo, orderTxRepo, exchangeRepo, listingRepo, assetOwnershipRepo, futuresRepo, optionRepo, fundRepo, userClient, bankingClient, taxRecorder)
 	portfolioSvc := service.NewPortfolioService(assetOwnershipRepo, stockRepo, optionRepo, futuresRepo, forexRepo, bankingClient, userClient)
 
 	taxSvc := service.NewTaxService(taxRepo, bankingClient, cfg)
@@ -296,7 +306,7 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 
 	r := gin.New()
 	server.InitRouter(r, cfg)
-	server.SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, verifier, permProvider, userClient)
+	server.SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, fundHandler, verifier, permProvider, userClient)
 
 	return r, userClient
 }
@@ -445,16 +455,16 @@ func seedOrder(t *testing.T, db *gorm.DB, userID, listingID uint, direction mode
 	t.Helper()
 
 	order := &model.Order{
-		UserID:        userID,
-		AccountNumber: "444000100000000001",
-		ListingID:     listingID,
-		OrderType:     model.OrderTypeMarket,
-		Direction:     direction,
-		Quantity:      10,
-		ContractSize:  1,
-		Status:        status,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		OrderOwnerUserID: userID,
+		AccountNumber:    "444000100000000001",
+		ListingID:        listingID,
+		OrderType:        model.OrderTypeMarket,
+		Direction:        direction,
+		Quantity:         10,
+		ContractSize:     1,
+		Status:           status,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
 	}
 
 	if err := db.Create(order).Error; err != nil {
@@ -482,6 +492,24 @@ func seedDailyPriceInfo(t *testing.T, db *gorm.DB, listingID uint) {
 	}
 }
 
+func seedInvestmentFund(t *testing.T, db *gorm.DB, name string, managerID uint) *model.InvestmentFund {
+	t.Helper()
+
+	fund := &model.InvestmentFund{
+		Name:                name,
+		Description:         fmt.Sprintf("Description for %s", name),
+		MinimumContribution: 1000.0,
+		ManagerID:           managerID,
+		AccountNumber:       fmt.Sprintf("444000199999%06d", uniqueCounter.Add(1)),
+		CreatedAt:           time.Now(),
+	}
+
+	if err := db.Create(fund).Error; err != nil {
+		t.Fatalf("seed investment fund: %v", err)
+	}
+
+	return fund
+}
 func authHeaderForSupervisor(t *testing.T) string {
 	t.Helper()
 

@@ -2775,6 +2775,9 @@ const docTemplate = `{
                 "amount": {
                     "type": "number"
                 },
+                "commission_exempt": {
+                    "type": "boolean"
+                },
                 "payer_account_number": {
                     "type": "string"
                 },
@@ -3230,12 +3233,14 @@ const docTemplate = `{
             "enum": [
                 "Personal",
                 "Business",
-                "Bank"
+                "Bank",
+                "Fund"
             ],
             "x-enum-varnames": [
                 "AccountTypePersonal",
                 "AccountTypeBusiness",
-                "AccountTypeBank"
+                "AccountTypeBank",
+                "AccountTypeFund"
             ]
         },
         "model.CurrencyCode": {

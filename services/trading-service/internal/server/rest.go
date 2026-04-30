@@ -25,12 +25,12 @@ import (
 	_ "github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/docs"
 )
 
-func NewServer(lc fx.Lifecycle, cfg *config.Configuration, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, otcHandler *handler.OTCHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
+func NewServer(lc fx.Lifecycle, cfg *config.Configuration, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, otcHandler *handler.OTCHandler, fundHandler *handler.InvestmentFundHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
 	r := gin.New()
 
 	InitRouter(r, cfg)
 
-	SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, verifier, permProvider, userClient)
+	SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, fundHandler, verifier, permProvider, userClient)
 
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -58,7 +58,8 @@ func InitRouter(r *gin.Engine, cfg *config.Configuration) {
 	validator.RegisterValidators()
 }
 
-func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, otcHandler *handler.OTCHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
+func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler *handler.TaxHandler, exchangeHandler *handler.ExchangeHandler, orderHandler *handler.OrderHandler, portfolioHandler *handler.PortfolioHandler, listingHandler *handler.ListingHandler, otcHandler *handler.OTCHandler, fundHandler *handler.InvestmentFundHandler, verifier auth.TokenVerifier, permProvider auth.PermissionProvider, userClient client.UserServiceClient) {
+
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	api := r.Group("/api")
@@ -108,6 +109,34 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 				options.GET("/:listingId", listingHandler.GetOptionDetails)
 			}
 		}
+		funds := api.Group("/investment-funds")
+		funds.Use(authMw, auth.RequirePermission(permission.Trading))
+		{
+			// Supervisori, agenti i klijenti mogu da vide sve fondove
+			funds.GET("",
+				auth.AnyOf(
+					middleware.RequireSupervisor(userClient),
+					middleware.RequireAgent(userClient),
+					auth.RequireIdentityType(auth.IdentityClient),
+				),
+				fundHandler.GetAllFunds,
+			)
+			// Samo supervisor može da kreira fond
+			funds.POST("",
+				auth.RequireIdentityType(auth.IdentityEmployee),
+				middleware.RequireSupervisor(userClient),
+				fundHandler.CreateFund,
+			)
+			// Klijenti i supervizori mogu da investiraju
+			funds.POST("/:fundId/invest",
+				auth.AnyOf(
+					auth.RequireIdentityType(auth.IdentityClient),
+					middleware.RequireSupervisor(userClient),
+				),
+				fundHandler.InvestInFund,
+			)
+		}
+
 
 		client := api.Group("/client")
 		client.Use(authMw, auth.RequirePermission(permission.Trading), auth.RequireClientSelf("clientId", true))
@@ -124,6 +153,7 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 		{
 			actuary.GET("/:actId/assets", portfolioHandler.GetActuaryPortfolio)
 			actuary.GET("/:actId/assets/profit", portfolioHandler.GetActuaryPortfolioProfit)
+			actuary.GET("/:actId/assets/funds", fundHandler.GetActuaryFunds)
 			actuary.GET("/:actId/accumulated-tax", taxHandler.GetActuaryAccumulatedTax)
 			actuary.POST("/:actId/options/:assetId/exercise", portfolioHandler.ExerciseOption)
 			actuary.PATCH("/:actId/assets/:ownershipId/publish", otcHandler.PublishAssetActuary)
@@ -141,15 +171,24 @@ func SetupRoutes(r *gin.Engine, healthHandler *handler.HealthHandler, taxHandler
 		{
 			orders.GET("", middleware.RequireSupervisor(userClient), orderHandler.GetOrders)
 			orders.POST("", orderHandler.CreateOrder)
+			orders.POST("/invest", middleware.RequireSupervisor(userClient), orderHandler.CreateFundOrder)
 			orders.PATCH("/:id/approve", middleware.RequireSupervisor(userClient), orderHandler.ApproveOrder)
 			orders.PATCH("/:id/decline", middleware.RequireSupervisor(userClient), orderHandler.DeclineOrder)
 			orders.PATCH("/:id/cancel", orderHandler.CancelOrder)
 		}
+
 		tax := api.Group("/tax")
 		tax.Use(authMw, auth.RequirePermission(permission.Trading))
 		{
 			tax.GET("", middleware.RequireSupervisor(userClient), taxHandler.ListTaxUsers)
 			tax.POST("/collect", middleware.RequireSupervisor(userClient), taxHandler.CollectTaxes)
+		}
+
+		profit := api.Group("/profit")
+		profit.Use(authMw, auth.RequirePermission(permission.Trading))
+		{
+			profit.GET("/actuaries", middleware.RequireSupervisor(userClient), portfolioHandler.GetAllActuaryProfits)
+			profit.GET("/funds", middleware.RequireSupervisor(userClient), fundHandler.GetBankFundPositions)
 		}
 	}
 }

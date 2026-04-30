@@ -1,4 +1,28 @@
 definitions:
+  dto.ActuaryFundResponse:
+    properties:
+      account_number:
+        type: string
+      description:
+        type: string
+      fund_id:
+        type: integer
+      fund_value:
+        type: number
+      liquid_assets:
+        type: number
+      name:
+        type: string
+    type: object
+  dto.ActuaryProfitResponse:
+    properties:
+      first_name:
+        type: string
+      last_name:
+        type: string
+      profit_rsd:
+        type: number
+    type: object
   dto.AssetType:
     enum:
     - STOCK
@@ -14,6 +38,73 @@ definitions:
   dto.CollectTaxesResponse:
     properties:
       message:
+        type: string
+    type: object
+  dto.CreateFundOrderRequest:
+    properties:
+      all_or_none:
+        type: boolean
+      direction:
+        allOf:
+        - $ref: '#/definitions/model.OrderDirection'
+        enum:
+        - BUY
+        - SELL
+      fund_id:
+        type: integer
+      limit_value:
+        type: number
+      listing_id:
+        type: integer
+      margin:
+        type: boolean
+      order_type:
+        allOf:
+        - $ref: '#/definitions/model.OrderType'
+        enum:
+        - MARKET
+        - LIMIT
+        - STOP
+        - STOP_LIMIT
+      quantity:
+        minimum: 1
+        type: integer
+      stop_value:
+        type: number
+    required:
+    - direction
+    - fund_id
+    - listing_id
+    - order_type
+    - quantity
+    type: object
+  dto.CreateFundRequest:
+    properties:
+      description:
+        type: string
+      minimum_contribution:
+        type: number
+      name:
+        type: string
+    required:
+    - description
+    - name
+    type: object
+  dto.CreateFundResponse:
+    properties:
+      account_number:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      fund_id:
+        type: integer
+      manager_id:
+        type: integer
+      minimum_contribution:
+        type: number
+      name:
         type: string
     type: object
   dto.CreateOrderRequest:
@@ -196,6 +287,42 @@ definitions:
       volume:
         type: integer
     type: object
+  dto.FundPositionResponse:
+    properties:
+      bank_share_pct:
+        type: number
+      bank_share_value:
+        type: number
+      fund_name:
+        type: string
+      manager_name:
+        type: string
+      profit:
+        type: number
+    type: object
+  dto.FundSummaryResponse:
+    properties:
+      account_number:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      fund_id:
+        type: integer
+      fund_value:
+        type: number
+      liquid_assets:
+        type: number
+      manager_id:
+        type: integer
+      minimum_contribution:
+        type: number
+      name:
+        type: string
+      profit:
+        type: number
+    type: object
   dto.FutureDetailedResponse:
     properties:
       ask:
@@ -260,6 +387,48 @@ definitions:
       ticker:
         type: string
       volume:
+        type: integer
+    type: object
+  dto.InvestInFundRequest:
+    properties:
+      account_number:
+        description: |-
+          AccountNumber is the source account for the investment.
+          For clients this must be one of their own accounts.
+          For supervisors this must be a bank account.
+        type: string
+      amount:
+        type: number
+    required:
+    - account_number
+    - amount
+    type: object
+  dto.InvestInFundResponse:
+    properties:
+      created_at:
+        type: string
+      currency_code:
+        type: string
+      fund_id:
+        type: integer
+      fund_name:
+        type: string
+      invested_now:
+        type: number
+      total_invested_rsd:
+        type: number
+    type: object
+  dto.ListFundsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.FundSummaryResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
         type: integer
     type: object
   dto.ListOrdersResponse:
@@ -363,6 +532,15 @@ definitions:
         type: string
       volume:
         type: integer
+    type: object
+  dto.OptionSpecificAssetData:
+    properties:
+      option_type:
+        type: string
+      settlement_date:
+        type: string
+      strike_price:
+        type: number
     type: object
   dto.OrderResponse:
     properties:
@@ -504,6 +682,8 @@ definitions:
         type: number
       last_modified:
         type: string
+      option_data:
+        $ref: '#/definitions/dto.OptionSpecificAssetData'
       price_per_unit_rsd:
         type: number
       profit:
@@ -668,10 +848,12 @@ definitions:
     enum:
     - CLIENT
     - ACTUARY
+    - FUND
     type: string
     x-enum-varnames:
     - OwnerTypeClient
     - OwnerTypeActuary
+    - OwnerTypeFund
 info:
   contact: {}
   description: API for managing portfolios, executing trades, and handling financial
@@ -804,6 +986,40 @@ paths:
       summary: Publish assets for OTC trading
       tags:
       - otc
+  /api/actuary/{actId}/assets/funds:
+    get:
+      description: Returns all investment funds managed by the specified actuary (supervisor).
+        Shows fund value and liquidity.
+      parameters:
+      - description: Actuary ID
+        in: path
+        name: actId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ActuaryFundResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Get funds managed by an actuary
+      tags:
+      - investment-funds
   /api/actuary/{actId}/assets/profit:
     get:
       description: Returns the total accumulated profit across all currently held
@@ -1135,6 +1351,49 @@ paths:
       summary: Toggle trading enabled for an exchange
       tags:
       - exchange
+  /api/funds:
+    get:
+      description: Returns a paginated list of all investment funds with optional
+        filtering and sorting. Accessible to actuaries and clients.
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by fund name (case-insensitive substring)
+        in: query
+        name: name
+        type: string
+      - description: 'Sort by field: name, minimum_contribution, created_at, liquid_assets'
+        in: query
+        name: sort_by
+        type: string
+      - description: 'Sort direction: asc, desc'
+        in: query
+        name: sort_dir
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ListFundsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Get all investment funds
+      tags:
+      - investment-funds
   /api/health:
     get:
       description: Returns service health status
@@ -1150,6 +1409,86 @@ paths:
       summary: Health check
       tags:
       - health
+  /api/investment-funds:
+    post:
+      consumes:
+      - application/json
+      description: Supervisor creates a new investment fund. An RSD account is automatically
+        created for the fund.
+      parameters:
+      - description: Fund details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateFundRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreateFundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Create a new investment fund
+      tags:
+      - investment-funds
+  /api/investment-funds/{fundId}/invest:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Allows a client or supervisor to invest money into an investment fund.
+        Clients must provide one of their own accounts; supervisors must provide a bank account.
+      parameters:
+      - description: Fund ID
+        in: path
+        name: fundId
+        required: true
+        type: integer
+      - description: Investment details
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InvestInFundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.InvestInFundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Invest into a fund
+      tags:
+      - investment-funds
   /api/listings/forex:
     get:
       parameters:
@@ -1730,6 +2069,47 @@ paths:
       summary: Decline a pending order
       tags:
       - orders
+  /api/orders/invest:
+    post:
+      consumes:
+      - application/json
+      description: Supervisor places a buy or sell order for a listing using a fund's
+        account. The fund becomes the asset owner.
+      parameters:
+      - description: Fund order details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateFundOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Create an order on behalf of an investment fund
+      tags:
+      - orders
   /api/otc/public:
     get:
       description: Returns a paginated list of assets that have been marked public
@@ -1764,6 +2144,77 @@ paths:
       summary: List all publicly available OTC assets
       tags:
       - otc
+  /api/profit/actuaries:
+    get:
+      consumes:
+      - application/json
+      description: Returns paginated list of actuaries with their profits (agents
+        and supervisors)
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by first name
+        in: query
+        name: first_name
+        type: string
+      - description: Filter by last name
+        in: query
+        name: last_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.ActuaryProfitResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Get actuary profits
+      tags:
+      - profit
+  /api/profit/funds:
+    get:
+      consumes:
+      - application/json
+      description: Returns all investment funds with bank share, manager info and
+        profit calculation
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.FundPositionResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      security:
+      - BearerAuth: []
+      summary: Get investment fund positions
+      tags:
+      - profit
   /api/tax:
     get:
       description: Returns a paginated list of clients and/or actuaries with their

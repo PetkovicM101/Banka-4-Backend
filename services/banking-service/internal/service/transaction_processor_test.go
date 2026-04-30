@@ -81,6 +81,10 @@ func (f *fakeTpAccountRepo) FindAll(_ context.Context, _ *dto.ListAccountsQuery)
 	return nil, 0, nil
 }
 
+func (r *fakeTpAccountRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) (*model.Account, error) {
+	return nil, nil
+}
+
 type fakeTpTransactionRepo struct {
 	tx        *model.Transaction
 	getErr    error
@@ -109,6 +113,10 @@ func (f *fakeTpTransactionRepo) GetByPayerAccountNumber(_ context.Context, _ str
 	return nil, nil
 }
 func (f *fakeTpTransactionRepo) GetByRecipientAccountNumber(_ context.Context, _ string) ([]*model.Transaction, error) {
+	return nil, nil
+}
+
+func (r *fakeTpTransactionRepo) FindByAccountType(ctx context.Context, accountType model.AccountType) ([]model.Account, error) {
 	return nil, nil
 }
 

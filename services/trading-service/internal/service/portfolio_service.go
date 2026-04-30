@@ -57,6 +57,54 @@ func (s *PortfolioService) GetActuaryPortfolio(ctx context.Context, actuaryID ui
 	return s.GetPortfolio(ctx, uint(actuaryID), model.OwnerTypeActuary)
 }
 
+func (s *PortfolioService) GetAllActuaryProfits(ctx context.Context,	page, pageSize int32,	firstName, lastName string) (*dto.PaginatedActuaryProfitResponse, error) {
+	resp, err := s.userClient.GetAllActuaries(ctx, page, pageSize, firstName, lastName)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. izvuci IDs
+	ids := make([]uint64, 0, len(resp.Actuaries))
+	for _, a := range resp.Actuaries {
+		ids = append(ids, a.Id)
+	}
+
+	profitMap := make(map[uint64]float64)
+
+	for _, id := range ids {
+		assets, err := s.GetActuaryPortfolio(ctx, uint(id))
+		if err != nil {
+			return nil, err
+		}
+
+		var total float64
+		for _, a := range assets {
+			total += a.Profit
+		}
+
+		profitMap[id] = total
+	}
+
+	result := make([]dto.ActuaryProfitResponse, 0, len(resp.Actuaries))
+
+	for _, a := range resp.Actuaries {
+		profit := profitMap[a.Id]
+
+		result = append(result, dto.ActuaryProfitResponse{
+			FirstName: a.FirstName,
+			LastName:  a.LastName,
+			ProfitRSD: profit,
+		})
+	}
+	
+	return &dto.PaginatedActuaryProfitResponse{
+		Data:     result,
+		Total:    resp.Total,
+		Page:     int(resp.Page),
+		PageSize: int(resp.PageSize),
+	}, nil
+}
+
 func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerType model.OwnerType) ([]dto.PortfolioAssetResponse, error) {
 	ownerships, err := s.ownershipRepo.FindByUserId(ctx, userId, ownerType)
 	if err != nil {
@@ -83,6 +131,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 		listing   *model.Listing
 	}
 	meta := make(map[uint]assetMeta)
+	optionData := make(map[uint]*dto.OptionSpecificAssetData)
 
 	stocks, err := s.stockRepo.FindByAssetIDs(ctx, assetIDs)
 	if err != nil {
@@ -101,6 +150,11 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 	}
 	for _, op := range options {
 		meta[op.AssetID] = assetMeta{assetType: dto.AssetTypeOption, listing: op.Listing}
+		optionData[op.AssetID] = &dto.OptionSpecificAssetData{
+			StrikePrice:    op.StrikePrice,
+			OptionType:     string(op.OptionType),
+			SettlementDate: op.SettlementDate,
+		}
 	}
 
 	futures, err := s.futuresRepo.FindByAssetIDs(ctx, assetIDs)
@@ -151,6 +205,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 			ticker = o.Asset.Ticker
 		}
 
+
 		result = append(result, dto.PortfolioAssetResponse{
 			AssetID:         o.AssetID,
 			Type:            m.assetType,
@@ -161,6 +216,7 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 			LastModified:    o.UpdatedAt,
 			Profit:          profit,
 			PublicAmount:    o.PublicAmount,
+			OptionData:      optionData[o.AssetID],
 		})
 	}
 
