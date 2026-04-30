@@ -106,4 +106,3 @@ func (r *investmentFundRepository) FindByManagerID(ctx context.Context, managerI
 		Find(&funds).Error
 	return funds, err
 }
-

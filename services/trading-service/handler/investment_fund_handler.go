@@ -36,7 +36,7 @@ func NewInvestmentFundHandler(service *service.InvestmentFundService) *Investmen
 func (h *InvestmentFundHandler) GetAllFunds(c *gin.Context) {
 	var query dto.ListFundsQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
@@ -49,7 +49,7 @@ func (h *InvestmentFundHandler) GetAllFunds(c *gin.Context) {
 
 	response, err := h.service.GetAllFunds(c.Request.Context(), query)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h *InvestmentFundHandler) GetAllFunds(c *gin.Context) {
 func (h *InvestmentFundHandler) GetBankFundPositions(c *gin.Context) {
 	res, err := h.service.GetBankFundPositions(c.Request.Context())
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -90,13 +90,13 @@ func (h *InvestmentFundHandler) GetBankFundPositions(c *gin.Context) {
 func (h *InvestmentFundHandler) GetActuaryFunds(c *gin.Context) {
 	actID, err := strconv.ParseUint(c.Param("actId"), 10, 64)
 	if err != nil {
-		c.Error(errors.BadRequestErr("invalid actuary id"))
+		_ = c.Error(errors.BadRequestErr("invalid actuary id"))
 		return
 	}
 
 	funds, err := h.service.GetActuaryFunds(c.Request.Context(), uint(actID))
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -118,13 +118,13 @@ func (h *InvestmentFundHandler) GetActuaryFunds(c *gin.Context) {
 func (h *InvestmentFundHandler) CreateFund(c *gin.Context) {
 	var req dto.CreateFundRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
 	fund, err := h.service.CreateFund(c.Request.Context(), req)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -150,19 +150,19 @@ func (h *InvestmentFundHandler) CreateFund(c *gin.Context) {
 func (h *InvestmentFundHandler) InvestInFund(c *gin.Context) {
 	fundID, err := strconv.ParseUint(c.Param("fundId"), 10, 64)
 	if err != nil || fundID == 0 {
-		c.Error(errors.BadRequestErr("invalid fund id"))
+		_ = c.Error(errors.BadRequestErr("invalid fund id"))
 		return
 	}
 
 	var req dto.InvestInFundRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
 	resp, err := h.service.InvestInFund(c.Request.Context(), uint(fundID), req)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 

@@ -57,7 +57,7 @@ func (s *PortfolioService) GetActuaryPortfolio(ctx context.Context, actuaryID ui
 	return s.GetPortfolio(ctx, uint(actuaryID), model.OwnerTypeActuary)
 }
 
-func (s *PortfolioService) GetAllActuaryProfits(ctx context.Context,	page, pageSize int32,	firstName, lastName string) (*dto.PaginatedActuaryProfitResponse, error) {
+func (s *PortfolioService) GetAllActuaryProfits(ctx context.Context, page, pageSize int32, firstName, lastName string) (*dto.PaginatedActuaryProfitResponse, error) {
 	resp, err := s.userClient.GetAllActuaries(ctx, page, pageSize, firstName, lastName)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (s *PortfolioService) GetAllActuaryProfits(ctx context.Context,	page, pageS
 			ProfitRSD: profit,
 		})
 	}
-	
+
 	return &dto.PaginatedActuaryProfitResponse{
 		Data:     result,
 		Total:    resp.Total,
@@ -204,7 +204,6 @@ func (s *PortfolioService) GetPortfolio(ctx context.Context, userId uint, ownerT
 		if o.Asset.Ticker != "" {
 			ticker = o.Asset.Ticker
 		}
-
 
 		result = append(result, dto.PortfolioAssetResponse{
 			AssetID:         o.AssetID,
