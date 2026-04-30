@@ -24,6 +24,7 @@ type InvestmentFundService struct {
 	ownershipRepo  repository.AssetOwnershipRepository
 	listingRepo    repository.ListingRepository
 	bankingClient  client.BankingClient
+	userClient     client.UserServiceClient
 	now            func() time.Time
 }
 
@@ -34,6 +35,7 @@ func NewInvestmentFundService(
 	ownershipRepo repository.AssetOwnershipRepository,
 	listingRepo repository.ListingRepository,
 	bankingClient client.BankingClient,
+	userClient client.UserServiceClient,
 ) *InvestmentFundService {
 	return &InvestmentFundService{
 		fundRepo:       fundRepo,
@@ -42,6 +44,7 @@ func NewInvestmentFundService(
 		ownershipRepo:  ownershipRepo,
 		listingRepo:    listingRepo,
 		bankingClient:  bankingClient,
+		userClient:     userClient,
 		now:            time.Now,
 	}
 }
@@ -121,6 +124,61 @@ func (s *InvestmentFundService) GetAllFunds(ctx context.Context, query dto.ListF
 		Page:     query.Page,
 		PageSize: query.PageSize,
 	}, nil
+}
+
+func (s *InvestmentFundService) GetBankFundPositions(ctx context.Context) ([]dto.FundPositionResponse, error) {
+	funds, err := s.fundRepo.GetAllInvestmentFunds(ctx)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err);
+	}
+
+	result := make([]dto.FundPositionResponse, 0, len(funds))
+
+	for _, fund := range funds {
+		secVal, err := s.sumSecuritiesValue(ctx, fund.FundID)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+		liquidAssets, err := s.getLiquidAssets(ctx, fund.AccountNumber)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+
+		var totalInvested float64
+		var bankInvested  float64
+		for _, pos := range fund.Positions {
+			totalInvested += pos.TotalInvestedAmount
+
+			if pos.OwnerType == model.OwnerTypeActuary {
+				bankInvested += pos.TotalInvestedAmount
+			}
+		}
+
+		var bankPct float64
+		if totalInvested > 0 {
+			bankPct = (bankInvested / totalInvested) * 100
+		} else {
+			bankPct = 0
+		}
+
+		bankValue := bankPct * (liquidAssets + secVal)
+		profit := bankValue - bankInvested
+
+		managerName := ""
+		if manager, err := s.userClient.GetEmployeeById(ctx, uint64(fund.ManagerID)); err == nil {
+			managerName = manager.FullName
+		}
+
+		result = append(result, dto.FundPositionResponse{
+			FundName:       fund.Name,
+			ManagerName:    managerName,
+			BankSharePct:   bankPct,
+			BankShareValue: bankValue,
+			Profit:         profit,
+		})
+	}
+
+	return result, nil
 }
 
 func (s *InvestmentFundService) GetActuaryFunds(ctx context.Context, managerID uint) ([]dto.ActuaryFundResponse, error) {
@@ -316,6 +374,7 @@ func (s *InvestmentFundService) InvestInFund(ctx context.Context, fundID uint, r
 		CreatedAt:        now,
 	}, nil
 }
+
 
 func (s *InvestmentFundService) validateFundAccount(ctx context.Context, accountNumber string, authCtx *auth.AuthContext) (*pb.GetAccountByNumberResponse, error) {
 	account, err := s.bankingClient.GetAccountByNumber(ctx, accountNumber)

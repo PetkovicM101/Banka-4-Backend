@@ -279,13 +279,12 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	forexRepo := repository.NewForexRepository(db)
 	optionRepo := repository.NewOptionRepository(db)
 	taxRepo := repository.NewTaxRepository(db)
-	profitRepo := repository.NewProfitRepository(db)
 	exchangeSvc := service.NewExchangeService(exchangeRepo)
 	listingSvc := service.NewListingService(listingRepo, futuresRepo, forexRepo, optionRepo)
 	fundRepo := repository.NewInvestmentFundRepository(db)
 	positionRepo := repository.NewClientFundPositionRepository(db)
 	investmentRepo := repository.NewClientFundInvestmentRepository(db)
-	fundSvc := service.NewInvestmentFundService(fundRepo, positionRepo, investmentRepo, assetOwnershipRepo, listingRepo, bankingClient)
+	fundSvc := service.NewInvestmentFundService(fundRepo, positionRepo, investmentRepo, assetOwnershipRepo, listingRepo, bankingClient, userClient)
 	fundHandler := handler.NewInvestmentFundHandler(fundSvc)
 
 	var taxRecorder service.TaxRecorder = &fakeTaxRecorder{}
@@ -294,7 +293,6 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 
 	taxSvc := service.NewTaxService(taxRepo, bankingClient, cfg)
 	otcSvc := service.NewOTCService(assetOwnershipRepo, listingRepo, userClient)
-	profitSvc := service.NewProfitService(profitRepo, userClient)
 
 	healthHandler := handler.NewHealthHandler()
 	exchangeHandler := handler.NewExchangeHandler(exchangeSvc)
@@ -303,13 +301,12 @@ func setupTestRouterWithPermissions(t *testing.T, db *gorm.DB, perms []permissio
 	portfolioHandler := handler.NewPortfolioHandler(portfolioSvc)
 	taxHandler := handler.NewTaxHandler(taxSvc, userClient)
 	otcHandler := handler.NewOTCHandler(otcSvc)
-	profitHandler := handler.NewProfitHandler(profitSvc)
 
 	verifier := auth.TokenVerifier(commonjwt.NewJWTVerifier(cfg.JWTSecret))
 
 	r := gin.New()
 	server.InitRouter(r, cfg)
-	server.SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, fundHandler, profitHandler, verifier, permProvider, userClient)
+	server.SetupRoutes(r, healthHandler, taxHandler, exchangeHandler, orderHandler, portfolioHandler, listingHandler, otcHandler, fundHandler, verifier, permProvider, userClient)
 
 	return r, userClient
 }
