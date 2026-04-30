@@ -22,6 +22,8 @@ type InvestmentFundService struct {
 	listingRepo    repository.ListingRepository
 	positionRepo   repository.ClientFundPositionRepository
 	investmentRepo repository.ClientFundInvestmentRepository
+	ownershipRepo  repository.AssetOwnershipRepository
+	listingRepo    repository.ListingRepository
 	bankingClient  client.BankingClient
 	userClient     client.UserServiceClient
 	now            func() time.Time
@@ -32,6 +34,8 @@ func NewInvestmentFundService(
 	positionRepo repository.ClientFundPositionRepository,
 	listingRepo repository.ListingRepository,
 	investmentRepo repository.ClientFundInvestmentRepository,
+	ownershipRepo repository.AssetOwnershipRepository,
+	listingRepo repository.ListingRepository,
 	bankingClient client.BankingClient,
 	userClient client.UserServiceClient,
 ) *InvestmentFundService {
@@ -40,10 +44,166 @@ func NewInvestmentFundService(
 		positionRepo:   positionRepo,
 		listingRepo:    listingRepo,
 		investmentRepo: investmentRepo,
+		ownershipRepo:  ownershipRepo,
+		listingRepo:    listingRepo,
 		bankingClient:  bankingClient,
 		userClient:     userClient,
 		now:            time.Now,
 	}
+}
+
+func (s *InvestmentFundService) sumSecuritiesValue(ctx context.Context, fundID uint) (float64, error) {
+	ownerships, err := s.ownershipRepo.FindByUserId(ctx, fundID, model.OwnerTypeFund)
+	if err != nil {
+		return 0, err
+	}
+	if len(ownerships) == 0 {
+		return 0, nil
+	}
+
+	assetIDs := make([]uint, len(ownerships))
+	for i, o := range ownerships {
+		assetIDs[i] = o.AssetID
+	}
+
+	listings, err := s.listingRepo.FindByAssetIDs(ctx, assetIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	priceInRSDByAsset := make(map[uint]float64, len(listings))
+	for _, l := range listings {
+		currency := "RSD"
+		if l.Exchange != nil && l.Exchange.Currency != "" {
+			currency = l.Exchange.Currency
+		}
+		priceRSD, err := s.bankingClient.ConvertCurrency(ctx, l.Price, currency, "RSD")
+		if err != nil {
+			return 0, err
+		}
+		priceInRSDByAsset[l.AssetID] = priceRSD
+	}
+
+	var total float64
+	for _, o := range ownerships {
+		total += o.Amount * priceInRSDByAsset[o.AssetID]
+	}
+	return total, nil
+}
+
+func (s *InvestmentFundService) getLiquidAssets(ctx context.Context, accountNumber string) (float64, error) {
+	resp, err := s.bankingClient.GetAccountByNumber(ctx, accountNumber)
+	if err != nil {
+		return 0, err
+	}
+	if resp == nil {
+		return 0, nil
+	}
+	return resp.AvailableBalance, nil
+}
+
+func (s *InvestmentFundService) GetAllFunds(ctx context.Context, query dto.ListFundsQuery) (*dto.ListFundsResponse, error) {
+	funds, total, err := s.fundRepo.FindAll(ctx, query.Name, query.SortBy, query.SortDir, query.Page, query.PageSize)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+
+	result := make([]dto.FundSummaryResponse, len(funds))
+	for i, fund := range funds {
+		secVal, err := s.sumSecuritiesValue(ctx, fund.FundID)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+		liquidAssets, err := s.getLiquidAssets(ctx, fund.AccountNumber)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+		result[i] = dto.ToFundSummaryResponse(fund, secVal, liquidAssets)
+	}
+
+	return &dto.ListFundsResponse{
+		Data:     result,
+		Total:    total,
+		Page:     query.Page,
+		PageSize: query.PageSize,
+	}, nil
+}
+
+func (s *InvestmentFundService) GetBankFundPositions(ctx context.Context) ([]dto.FundPositionResponse, error) {
+	funds, err := s.fundRepo.GetAllInvestmentFunds(ctx)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+
+	result := make([]dto.FundPositionResponse, 0, len(funds))
+
+	for _, fund := range funds {
+		secVal, err := s.sumSecuritiesValue(ctx, fund.FundID)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+		liquidAssets, err := s.getLiquidAssets(ctx, fund.AccountNumber)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+
+		var totalInvested float64
+		var bankInvested float64
+		for _, pos := range fund.Positions {
+			totalInvested += pos.TotalInvestedAmount
+
+			if pos.OwnerType == model.OwnerTypeActuary {
+				bankInvested += pos.TotalInvestedAmount
+			}
+		}
+
+		var bankPct float64
+		if totalInvested > 0 {
+			bankPct = (bankInvested / totalInvested) * 100
+		} else {
+			bankPct = 0
+		}
+
+		bankValue := bankPct * (liquidAssets + secVal)
+		profit := bankValue - bankInvested
+
+		managerName := ""
+		if manager, err := s.userClient.GetEmployeeById(ctx, uint64(fund.ManagerID)); err == nil {
+			managerName = manager.FullName
+		}
+
+		result = append(result, dto.FundPositionResponse{
+			FundName:       fund.Name,
+			ManagerName:    managerName,
+			BankSharePct:   bankPct,
+			BankShareValue: bankValue,
+			Profit:         profit,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *InvestmentFundService) GetActuaryFunds(ctx context.Context, managerID uint) ([]dto.ActuaryFundResponse, error) {
+	funds, err := s.fundRepo.FindByManagerID(ctx, managerID)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+
+	result := make([]dto.ActuaryFundResponse, len(funds))
+	for i, fund := range funds {
+		secVal, err := s.sumSecuritiesValue(ctx, fund.FundID)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+		liquidAssets, err := s.getLiquidAssets(ctx, fund.AccountNumber)
+		if err != nil {
+			return nil, commonErrors.InternalErr(err)
+		}
+		result[i] = dto.ToActuaryFundResponse(fund, secVal, liquidAssets)
+	}
+
+	return result, nil
 }
 
 // CreateFund creates a new investment fund. Only supervisors can call this.
