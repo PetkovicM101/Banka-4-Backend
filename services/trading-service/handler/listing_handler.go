@@ -79,7 +79,7 @@ func (h *ListingHandler) GetStockDetails(c *gin.Context) {
 
 	var req dto.ListingDetailsQuery
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
+		_ = c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
 		return
 	}
 	result, err := h.svc.GetStockDetails(c.Request.Context(), uint(listingId), req.DaysBack)
@@ -218,7 +218,7 @@ func (h *ListingHandler) GetFutureDetails(c *gin.Context) {
 
 	var req dto.ListingDetailsQuery
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
+		_ = c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
 		return
 	}
 	result, err := h.svc.GetFutureDetails(c.Request.Context(), uint(listingId), req.DaysBack)
@@ -251,7 +251,7 @@ func (h *ListingHandler) GetForexDetails(c *gin.Context) {
 	}
 	var req dto.ListingDetailsQuery
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
+		_ = c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
 		return
 	}
 	result, err := h.svc.GetForexDetails(c.Request.Context(), uint(listingId), req.DaysBack)
@@ -285,7 +285,7 @@ func (h *ListingHandler) GetOptionDetails(c *gin.Context) {
 
 	var req dto.ListingDetailsQuery
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
+		_ = c.Error(errors.BadRequestErr("invalid query parameters: " + err.Error()))
 		return
 	}
 	result, err := h.svc.GetOptionDetails(c.Request.Context(), uint(listingId), req.DaysBack)

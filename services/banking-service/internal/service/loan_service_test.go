@@ -72,7 +72,6 @@ type fakeLoanRepo struct {
 	loanErr              error
 	instErr              error
 	findErr              error
-	updateErr            error
 	variableRateLoansErr error
 }
 

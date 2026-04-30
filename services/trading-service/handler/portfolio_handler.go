@@ -97,13 +97,13 @@ func (h *PortfolioHandler) GetActuaryPortfolio(c *gin.Context) {
 func (h *PortfolioHandler) GetClientPortfolioProfit(c *gin.Context) {
 	clientID, err := strconv.ParseUint(c.Param("clientId"), 10, 64)
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid client id"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid client id"))
 		return
 	}
 
 	assets, err := h.service.GetClientPortfolio(c.Request.Context(), uint(clientID))
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -132,13 +132,13 @@ func (h *PortfolioHandler) GetClientPortfolioProfit(c *gin.Context) {
 func (h *PortfolioHandler) GetActuaryPortfolioProfit(c *gin.Context) {
 	actID, err := strconv.ParseUint(c.Param("actId"), 10, 64)
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid actuary id"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid actuary id"))
 		return
 	}
 
 	assets, err := h.service.GetActuaryPortfolio(c.Request.Context(), uint(actID))
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -168,13 +168,13 @@ func (h *PortfolioHandler) GetActuaryPortfolioProfit(c *gin.Context) {
 func (h *PortfolioHandler) GetAllActuaryProfits(c *gin.Context) {
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid page"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid page"))
 		return
 	}
 
 	pageSize, err := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid page size"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid page size"))
 		return
 	}
 
@@ -189,7 +189,7 @@ func (h *PortfolioHandler) GetAllActuaryProfits(c *gin.Context) {
 		lastName,
 	)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -216,25 +216,25 @@ func (h *PortfolioHandler) GetAllActuaryProfits(c *gin.Context) {
 func (h *PortfolioHandler) ExerciseOption(c *gin.Context) {
 	actID, err := strconv.ParseUint(c.Param("actId"), 10, 64)
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid actuary id"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid actuary id"))
 		return
 	}
 
 	assetID, err := strconv.ParseUint(c.Param("assetId"), 10, 64)
 	if err != nil {
-		c.Error(pkgerrors.BadRequestErr("invalid asset id"))
+		_ = c.Error(pkgerrors.BadRequestErr("invalid asset id"))
 		return
 	}
 
 	var req dto.ExerciseOptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(pkgerrors.BadRequestErr(err.Error()))
+		_ = c.Error(pkgerrors.BadRequestErr(err.Error()))
 		return
 	}
 
 	resp, err := h.service.ExerciseOption(c.Request.Context(), uint(actID), model.OwnerTypeActuary, uint(assetID), req.AccountNumber)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 

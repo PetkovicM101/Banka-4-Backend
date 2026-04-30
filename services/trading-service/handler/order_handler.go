@@ -105,13 +105,13 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 func (h *OrderHandler) CreateFundOrder(c *gin.Context) {
 	var req dto.CreateFundOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.Error(errors.BadRequestErr(err.Error()))
+		_ = c.Error(errors.BadRequestErr(err.Error()))
 		return
 	}
 
 	order, err := h.service.CreateFundOrder(c.Request.Context(), req)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
