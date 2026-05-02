@@ -148,11 +148,11 @@ func TestCreateFund_AccountNumberIsUnique(t *testing.T) {
 
 func TestGetFundDetail_Success_AsClient(t *testing.T) {
 	t.Skip("Skipping: requires banking service with account balance; will be re-enabled later")
-  t.Parallel()
+	t.Parallel()
 	db := setupTestDB(t)
 	router, _ := setupTestRouter(t, db)
-  
-  supervisorAuth := authHeaderForSupervisor(t)
+
+	supervisorAuth := authHeaderForSupervisor(t)
 	fundName := fmt.Sprintf("GetFundTest %d", uniqueCounter.Add(1))
 	createBody := map[string]any{
 		"name":                 fundName,
@@ -183,11 +183,11 @@ func TestGetFundDetail_Success_AsClient(t *testing.T) {
 
 func TestGetFundDetail_Unauthorized(t *testing.T) {
 	t.Skip("Skipping: requires banking service with account balance; will be re-enabled later")
-  t.Parallel()
+	t.Parallel()
 	db := setupTestDB(t)
 	router, _ := setupTestRouter(t, db)
-  
-  supervisorAuth := authHeaderForSupervisor(t)
+
+	supervisorAuth := authHeaderForSupervisor(t)
 	createBody := map[string]any{
 		"name":                 fmt.Sprintf("NoAuthFund %d", uniqueCounter.Add(1)),
 		"description":          "For unauthorized test",
@@ -203,22 +203,22 @@ func TestGetFundDetail_Unauthorized(t *testing.T) {
 }
 
 func TestGetFundDetail_NotFound(t *testing.T) {
-  t.Parallel()
+	t.Parallel()
 	db := setupTestDB(t)
 	router, _ := setupTestRouter(t, db)
-  
-  clientAuth := authHeaderForClient(t, 10, 100)
+
+	clientAuth := authHeaderForClient(t, 10, 100)
 	rec := performRequest(t, router, http.MethodGet, "/api/investment-funds/999999", nil, clientAuth)
 	requireStatus(t, rec, http.StatusNotFound)
 }
 
 func TestGetFundDetail_HoldingsFormat(t *testing.T) {
 	t.Skip("Skipping: requires banking service with account balance; will be re-enabled later")
-  t.Parallel()
+	t.Parallel()
 	db := setupTestDB(t)
 	router, _ := setupTestRouter(t, db)
-  
-  supervisorAuth := authHeaderForSupervisor(t)
+
+	supervisorAuth := authHeaderForSupervisor(t)
 	fundName := fmt.Sprintf("HoldingsFund %d", uniqueCounter.Add(1))
 	createBody := map[string]any{
 		"name":                 fundName,
@@ -245,6 +245,7 @@ func TestGetFundDetail_HoldingsFormat(t *testing.T) {
 		require.Contains(t, first, "acquisitionDate")
 	}
 }
+
 // ── GET /api/funds tests ──────────────────────────────────────────
 
 func TestGetAllFunds_Success(t *testing.T) {

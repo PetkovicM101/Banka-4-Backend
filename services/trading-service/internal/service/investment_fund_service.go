@@ -433,7 +433,7 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint) 
 	if err != nil {
 		return nil, commonErrors.InternalErr(err)
 	}
-	
+
 	fundValue := liquidAssets + securitiesValue
 
 	holdings, err := s.fundRepo.FindHoldings(ctx, fundID)

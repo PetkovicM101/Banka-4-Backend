@@ -9,8 +9,8 @@ import (
 
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/auth"
 	"github.com/RAF-SI-2025/Banka-4-Backend/common/pkg/pb"
-	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/dto"
+	"github.com/RAF-SI-2025/Banka-4-Backend/services/trading-service/internal/model"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,11 +25,11 @@ type fakeFundRepo struct {
 	created          *model.InvestmentFund
 
 	// new fields for GetFundDetail
-	findHoldingsResult           []model.AssetOwnership
-	findHoldingsErr              error
-	getPerformanceHistoryResult  []model.FundPerformance
-	getPerformanceHistoryErr     error
-  
+	findHoldingsResult          []model.AssetOwnership
+	findHoldingsErr             error
+	getPerformanceHistoryResult []model.FundPerformance
+	getPerformanceHistoryErr    error
+
 	findAllResult       []model.InvestmentFund
 	findAllTotal        int64
 	findAllErr          error
@@ -282,14 +282,14 @@ func TestGetFundDetail_Success(t *testing.T) {
 			{Date: time.Now().AddDate(0, -2, 0), FundValue: 1700},
 		},
 	}
-	listingRepo := &fakeListingRepo {
+	listingRepo := &fakeListingRepo{
 		byAssetIDs: []model.Listing{
 			{AssetID: 100, Price: 120, MaintenanceMargin: 10, ListingID: 1000},
 			{AssetID: 101, Price: 110, MaintenanceMargin: 8, ListingID: 1001},
 		},
 		dailyPriceInfo: &model.ListingDailyPriceInfo{Change: 2.5, Volume: 1000},
 	}
-  svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient, userClient)
+	svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient, userClient)
 
 	resp, err := svc.GetFundDetail(context.Background(), 1)
 	require.NoError(t, err)
@@ -347,7 +347,7 @@ func TestGetFundDetail_NotFound(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDResult: nil}
 	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 99)
-  require.Error(t, err)
+	require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
 }
 
@@ -364,8 +364,8 @@ func TestGetFundDetail_RepoFindByIDError(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDErr: errors.New("db error")}
 	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
 	_, err := svc.GetFundDetail(context.Background(), 1)
-  
-  require.Error(t, err)
+
+	require.Error(t, err)
 }
 
 func TestCreateFund_NotEmployee(t *testing.T) {
@@ -402,8 +402,8 @@ func TestCreateFund_BankingClientError(t *testing.T) {
 func TestGetFundDetail_EmptyHoldings(t *testing.T) {
 	fund := &model.InvestmentFund{FundID: 1, AccountNumber: "ACC", MinimumContribution: 100}
 	fundRepo := &fakeFundRepo{
-		findByIDResult:               fund,
-		findHoldingsResult:           []model.AssetOwnership{},
+		findByIDResult:     fund,
+		findHoldingsResult: []model.AssetOwnership{},
 		getPerformanceHistoryResult: []model.FundPerformance{
 			{Date: time.Now(), FundValue: 5000},
 		},
