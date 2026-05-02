@@ -12,7 +12,6 @@ type InvestmentFundRepository interface {
 	FindByAccountNumber(ctx context.Context, accountNumber string) (*model.InvestmentFund, error)
 	FindByName(ctx context.Context, name string) (*model.InvestmentFund, error)
 	FindHoldings(ctx context.Context, fundID uint) ([]model.AssetOwnership, error)
-	CalculateTotalInvested(ctx context.Context, fundID uint) (float64, error)
 	GetPerformanceHistory(ctx context.Context, fundID uint, limit int) ([]model.FundPerformance, error)
 	SavePerformanceSnapshot(ctx context.Context, perf *model.FundPerformance) error
 	GetAllInvestmentFunds(ctx context.Context) ([]model.InvestmentFund, error)

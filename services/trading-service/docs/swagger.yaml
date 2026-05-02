@@ -287,6 +287,40 @@ definitions:
       volume:
         type: integer
     type: object
+  dto.FundDetailResponse:
+    properties:
+      account_balance:
+        type: number
+      description:
+        type: string
+      fund_value:
+        type: number
+      holdings:
+        items:
+          $ref: '#/definitions/dto.SecurityHoldingResponse'
+        type: array
+      id:
+        type: integer
+      manager:
+        type: string
+      min_investment:
+        type: number
+      name:
+        type: string
+      performance_history:
+        items:
+          $ref: '#/definitions/dto.FundPerformanceEntry'
+        type: array
+      profit:
+        type: number
+    type: object
+  dto.FundPerformanceEntry:
+    properties:
+      date:
+        type: string
+      value:
+        type: number
+    type: object
   dto.FundPositionResponse:
     properties:
       bank_share_pct:
@@ -706,6 +740,21 @@ definitions:
         type: number
     required:
     - amount
+    type: object
+  dto.SecurityHoldingResponse:
+    properties:
+      acquisition_date:
+        type: string
+      change:
+        type: number
+      initial_margin_cost:
+        type: number
+      price:
+        type: number
+      ticker:
+        type: string
+      volume:
+        type: integer
     type: object
   dto.StockDetailedResponse:
     properties:
@@ -1442,6 +1491,48 @@ paths:
           schema:
             $ref: '#/definitions/errors.AppError'
       summary: Create a new investment fund
+      tags:
+      - investment-funds
+  /api/investment-funds/{fundId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves detailed information about an investment fund, including
+        holdings, current value, performance history, and account balance.
+      parameters:
+      - description: Fund ID
+        in: path
+        name: fundId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.FundDetailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/errors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/errors.AppError'
+      summary: Get investment fund details
       tags:
       - investment-funds
   /api/investment-funds/{fundId}/invest:

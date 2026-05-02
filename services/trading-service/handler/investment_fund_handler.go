@@ -169,27 +169,33 @@ func (h *InvestmentFundHandler) InvestInFund(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+// GetFundDetail godoc
+// @Summary Get investment fund details
+// @Description Retrieves detailed information about an investment fund, including holdings, current value, performance history, and account balance.
+// @Tags investment-funds
+// @Accept json
+// @Produce json
+// @Param fundId path int true "Fund ID"
+// @Success 200 {object} dto.FundDetailResponse
+// @Failure 400 {object} errors.AppError
+// @Failure 401 {object} errors.AppError
+// @Failure 403 {object} errors.AppError
+// @Failure 404 {object} errors.AppError
+// @Failure 500 {object} errors.AppError
+// @Router /api/investment-funds/{fundId} [get]
 func (h *InvestmentFundHandler) GetFundDetail(c *gin.Context) {
 	fundIDStr := c.Param("fundId")
 	fundID, err := strconv.ParseUint(fundIDStr, 10, 32)
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
-	userRole, exists := c.Get("user_role")
-	if !exists {
-		userRole = "client"
-	}
-	roleStr, ok := userRole.(string)
-	if !ok {
-		roleStr = "client"
-	}
-
-	_, err = h.service.GetFundDetail(c.Request.Context(), uint(fundID), roleStr)
+	resp, err := h.service.GetFundDetail(c.Request.Context(), uint(fundID))
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
-	c.Error(err)
+
+	c.JSON(http.StatusOK, resp)
 }

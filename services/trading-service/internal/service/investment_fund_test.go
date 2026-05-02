@@ -27,8 +27,6 @@ type fakeFundRepo struct {
 	// new fields for GetFundDetail
 	findHoldingsResult           []model.AssetOwnership
 	findHoldingsErr              error
-	calculateTotalInvestedResult float64
-	calculateTotalInvestedErr    error
 	getPerformanceHistoryResult  []model.FundPerformance
 	getPerformanceHistoryErr     error
   
@@ -71,9 +69,6 @@ func (f *fakeFundRepo) Create(ctx context.Context, fund *model.InvestmentFund) e
 }
 func (f *fakeFundRepo) FindHoldings(ctx context.Context, fundID uint) ([]model.AssetOwnership, error) {
 	return f.findHoldingsResult, f.findHoldingsErr
-}
-func (f *fakeFundRepo) CalculateTotalInvested(ctx context.Context, fundID uint) (float64, error) {
-	return f.calculateTotalInvestedResult, f.calculateTotalInvestedErr
 }
 
 func (f *fakeFundRepo) GetPerformanceHistory(ctx context.Context, fundID uint, limit int) ([]model.FundPerformance, error) {
@@ -258,6 +253,9 @@ func TestGetFundDetail_Success(t *testing.T) {
 		MinimumContribution: 500,
 		ManagerID:           10,
 		AccountNumber:       "ACC123",
+		Positions: []model.ClientFundPosition{
+			{TotalInvestedAmount: 1500.0},
+		},
 	}
 	bankingClient := &fakeFundBankingClient{
 		getAccountResult: &pb.GetAccountByNumberResponse{AvailableBalance: 2000},
@@ -279,7 +277,6 @@ func TestGetFundDetail_Success(t *testing.T) {
 				UpdatedAt: time.Now().Add(-48 * time.Hour),
 			},
 		},
-		calculateTotalInvestedResult: 1500,
 		getPerformanceHistoryResult: []model.FundPerformance{
 			{Date: time.Now().AddDate(0, -1, 0), FundValue: 1800},
 			{Date: time.Now().AddDate(0, -2, 0), FundValue: 1700},
@@ -294,14 +291,14 @@ func TestGetFundDetail_Success(t *testing.T) {
 	}
   svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient, userClient)
 
-	resp, err := svc.GetFundDetail(context.Background(), 1, "client")
+	resp, err := svc.GetFundDetail(context.Background(), 1)
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.Equal(t, "Test Fund", resp.Name)
 	require.Equal(t, "A test fund", resp.Description)
 	require.Equal(t, 500.0, resp.MinInvestment)
 	require.Equal(t, "Manager 10", resp.Manager)
-	require.Equal(t, 2000.0, resp.AccountBalance)
+	require.Equal(t, 2000.0, resp.LiquidAssets)
 
 	// fundValue = (10*120)+(5*110) = 1200+550=1750
 	// profit = 1750 - 1500 = 250
@@ -349,7 +346,7 @@ func TestCreateFund_Success(t *testing.T) {
 func TestGetFundDetail_NotFound(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDResult: nil}
 	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
-	_, err := svc.GetFundDetail(context.Background(), 99, "client")
+	_, err := svc.GetFundDetail(context.Background(), 99)
   require.Error(t, err)
 	require.Contains(t, err.Error(), "not found")
 }
@@ -366,7 +363,7 @@ func TestCreateFund_Unauthenticated(t *testing.T) {
 func TestGetFundDetail_RepoFindByIDError(t *testing.T) {
 	fundRepo := &fakeFundRepo{findByIDErr: errors.New("db error")}
 	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
-	_, err := svc.GetFundDetail(context.Background(), 1, "client")
+	_, err := svc.GetFundDetail(context.Background(), 1)
   
   require.Error(t, err)
 }
@@ -386,21 +383,8 @@ func TestGetFundDetail_HoldingsError(t *testing.T) {
 		findHoldingsErr: errors.New("holdings error"),
 	}
 	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
-	_, err := svc.GetFundDetail(context.Background(), 1, "client")
+	_, err := svc.GetFundDetail(context.Background(), 1)
 	require.Error(t, err)
-}
-
-func TestGetFundDetail_CalculateTotalInvestedError(t *testing.T) {
-	fund := &model.InvestmentFund{FundID: 1, AccountNumber: "ACC"}
-	fundRepo := &fakeFundRepo{
-		findByIDResult:            fund,
-		findHoldingsResult:        []model.AssetOwnership{},
-		calculateTotalInvestedErr: errors.New("calc error"),
-	}
-	svc := newTestFundServiceWithListing(fundRepo, &fakeListingRepo{}, &fakeFundBankingClient{}, &fakeUserClient{})
-	_, err := svc.GetFundDetail(context.Background(), 1, "client")
-  
-  require.Error(t, err)
 }
 
 func TestCreateFund_BankingClientError(t *testing.T) {
@@ -420,7 +404,6 @@ func TestGetFundDetail_EmptyHoldings(t *testing.T) {
 	fundRepo := &fakeFundRepo{
 		findByIDResult:               fund,
 		findHoldingsResult:           []model.AssetOwnership{},
-		calculateTotalInvestedResult: 0,
 		getPerformanceHistoryResult: []model.FundPerformance{
 			{Date: time.Now(), FundValue: 5000},
 		},
@@ -432,7 +415,7 @@ func TestGetFundDetail_EmptyHoldings(t *testing.T) {
 	userClient := &fakeUserClient{}
 	svc := newTestFundServiceWithListing(fundRepo, listingRepo, bankingClient, userClient)
 
-	resp, err := svc.GetFundDetail(context.Background(), 1, "client")
+	resp, err := svc.GetFundDetail(context.Background(), 1)
 	require.NoError(t, err)
 	require.Equal(t, 5000.0, resp.FundValue)
 	require.Equal(t, 5000.0, resp.Profit) // profit = 5000 - 0 = 5000

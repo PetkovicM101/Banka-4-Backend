@@ -885,6 +885,68 @@
                 }
             }
         },
+        "/api/investment-funds/{fundId}": {
+            "get": {
+                "description": "Retrieves detailed information about an investment fund, including holdings, current value, performance history, and account balance.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "investment-funds"
+                ],
+                "summary": "Get investment fund details",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Fund ID",
+                        "name": "fundId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.FundDetailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/errors.AppError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/investment-funds/{fundId}/invest": {
             "post": {
                 "description": "Allows a client or supervisor to invest money into an investment fund.\nClients must provide one of their own accounts; supervisors must provide a bank account.",
@@ -2609,6 +2671,58 @@
                 }
             }
         },
+        "dto.FundDetailResponse": {
+            "type": "object",
+            "properties": {
+                "account_balance": {
+                    "type": "number"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "fund_value": {
+                    "type": "number"
+                },
+                "holdings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.SecurityHoldingResponse"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "manager": {
+                    "type": "string"
+                },
+                "min_investment": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "performance_history": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.FundPerformanceEntry"
+                    }
+                },
+                "profit": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.FundPerformanceEntry": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
         "dto.FundPositionResponse": {
             "type": "object",
             "properties": {
@@ -3241,6 +3355,29 @@
             "properties": {
                 "amount": {
                     "type": "number"
+                }
+            }
+        },
+        "dto.SecurityHoldingResponse": {
+            "type": "object",
+            "properties": {
+                "acquisition_date": {
+                    "type": "string"
+                },
+                "change": {
+                    "type": "number"
+                },
+                "initial_margin_cost": {
+                    "type": "number"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "ticker": {
+                    "type": "string"
+                },
+                "volume": {
+                    "type": "integer"
                 }
             }
         },

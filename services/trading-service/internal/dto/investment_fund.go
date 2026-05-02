@@ -7,8 +7,8 @@ type SecurityHoldingResponse struct {
 	Price             float64   `json:"price"`
 	Change            float64   `json:"change"`
 	Volume            uint64    `json:"volume"`
-	InitialMarginCost float64   `json:"initialMarginCost"`
-	AcquisitionDate   time.Time `json:"acquisitionDate"`
+	InitialMarginCost float64   `json:"initial_margin_cost"`
+	AcquisitionDate   time.Time `json:"acquisition_date"`
 }
 
 type FundPerformanceEntry struct {
@@ -21,10 +21,10 @@ type FundDetailResponse struct {
 	Name               string                    `json:"name"`
 	Description        string                    `json:"description"`
 	Manager            string                    `json:"manager"`
-	FundValue          float64                   `json:"fundValue"`
-	MinInvestment      float64                   `json:"minInvestment"`
+	FundValue          float64                   `json:"fund_value"`
+	MinInvestment      float64                   `json:"min_investment"`
 	Profit             float64                   `json:"profit"`
-	AccountBalance     float64                   `json:"accountBalance"`
+	LiquidAssets       float64                   `json:"account_balance"`
 	Holdings           []SecurityHoldingResponse `json:"holdings"`
-	PerformanceHistory []FundPerformanceEntry    `json:"performanceHistory"`
+	PerformanceHistory []FundPerformanceEntry    `json:"performance_history"`
 }

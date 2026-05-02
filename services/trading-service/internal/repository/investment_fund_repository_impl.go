@@ -24,7 +24,7 @@ func (r *investmentFundRepository) Create(ctx context.Context, fund *model.Inves
 
 func (r *investmentFundRepository) FindByID(ctx context.Context, id uint) (*model.InvestmentFund, error) {
 	var fund model.InvestmentFund
-	result := r.db.WithContext(ctx).First(&fund, id)
+	result := r.db.WithContext(ctx).Preload("Positions").First(&fund, id)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -56,17 +56,6 @@ func (r *investmentFundRepository) FindHoldings(ctx context.Context, fundID uint
 		Preload("Asset").
 		Find(&holdings).Error
 	return holdings, err
-}
-
-
-func (r *investmentFundRepository) CalculateTotalInvested(ctx context.Context, fundID uint) (float64, error) {
-	var total float64
-	err := r.db.WithContext(ctx).
-		Model(&model.AssetOwnership{}).
-		Where("user_id = ? AND owner_type = ?", fundID, model.OwnerTypeFund).
-		Select("COALESCE(SUM(amount * avg_buy_price_rsd), 0)").
-		Scan(&total).Error
-	return total, err
 }
 
 func (r *investmentFundRepository) GetPerformanceHistory(ctx context.Context, fundID uint, limit int) ([]model.FundPerformance, error) {

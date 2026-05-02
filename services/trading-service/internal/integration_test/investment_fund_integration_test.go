@@ -172,13 +172,13 @@ func TestGetFundDetail_Success_AsClient(t *testing.T) {
 	resp := decodeResponse[map[string]any](t, rec)
 	require.Equal(t, fundName, resp["name"])
 	require.Equal(t, "Test fund for GET endpoint", resp["description"])
-	require.Equal(t, 2000.0, resp["minInvestment"])
+	require.Equal(t, 2000.0, resp["min_investment"])
 	require.Contains(t, resp["manager"], "Manager")
-	require.NotNil(t, resp["fundValue"])
+	require.NotNil(t, resp["fund_value"])
 	require.NotNil(t, resp["profit"])
-	require.NotNil(t, resp["accountBalance"])
+	require.NotNil(t, resp["account_balance"])
 	require.IsType(t, []interface{}{}, resp["holdings"])
-	require.IsType(t, []interface{}{}, resp["performanceHistory"])
+	require.IsType(t, []interface{}{}, resp["performance_history"])
 }
 
 func TestGetFundDetail_Unauthorized(t *testing.T) {

@@ -135,6 +135,7 @@ func main() {
 				&model.InvestmentFund{},
 				&model.ClientFundPosition{},
 				&model.ClientFundInvestment{},
+				&model.FundPerformance{},
 			)
 		}),
 		fx.Invoke(func(lc fx.Lifecycle, svc *service.StockService) {

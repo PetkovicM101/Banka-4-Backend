@@ -415,7 +415,7 @@ func resolveCallerIdentity(authCtx *auth.AuthContext) (uint, model.OwnerType, er
 	}
 }
 
-func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, userRole string) (*dto.FundDetailResponse, error) {
+func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint) (*dto.FundDetailResponse, error) {
 	// 1. Fund base info
 	fund, err := s.fundRepo.FindByID(ctx, fundID)
 	if err != nil {
@@ -425,14 +425,22 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 		return nil, commonErrors.NotFoundErr("investment fund not found")
 	}
 
-	// 2. Holdings (positions)
+	securitiesValue, err := s.sumSecuritiesValue(ctx, fund.FundID)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+	liquidAssets, err := s.getLiquidAssets(ctx, fund.AccountNumber)
+	if err != nil {
+		return nil, commonErrors.InternalErr(err)
+	}
+	
+	fundValue := liquidAssets + securitiesValue
+
 	holdings, err := s.fundRepo.FindHoldings(ctx, fundID)
 	if err != nil {
 		return nil, commonErrors.InternalErr(err)
 	}
 
-	// 3. Compute current fund value and prepare holdings list
-	var fundValue float64 = 0
 	holdingsResp := make([]dto.SecurityHoldingResponse, 0, len(holdings))
 
 	// Batch fetch listings by asset IDs
@@ -447,6 +455,11 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 	listingMap := make(map[uint]*model.Listing)
 	for i := range listings {
 		listingMap[listings[i].AssetID] = &listings[i]
+	}
+
+	var totalInvested float64
+	for _, pos := range fund.Positions {
+		totalInvested += pos.TotalInvestedAmount
 	}
 
 	for _, h := range holdings {
@@ -476,19 +489,6 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 		})
 	}
 
-	var balance float64
-	balanceResp, err := s.bankingClient.GetAccountByNumber(ctx, fund.AccountNumber)
-	if err != nil {
-		balance = 0
-	} else {
-		balance = balanceResp.GetAvailableBalance()
-	}
-	fundValue += balance
-
-	totalInvested, err := s.fundRepo.CalculateTotalInvested(ctx, fundID)
-	if err != nil {
-		return nil, commonErrors.InternalErr(err)
-	}
 	profit := fundValue - totalInvested
 
 	// 6. Performance history (last 12 entries)
@@ -518,7 +518,7 @@ func (s *InvestmentFundService) GetFundDetail(ctx context.Context, fundID uint, 
 		FundValue:          fundValue,
 		MinInvestment:      fund.MinimumContribution,
 		Profit:             profit,
-		AccountBalance:     balance,
+		LiquidAssets:       liquidAssets,
 		Holdings:           holdingsResp,
 		PerformanceHistory: perfResp,
 	}, nil
